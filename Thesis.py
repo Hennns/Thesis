@@ -1,8 +1,4 @@
 
-# coding: utf-8
-
-#TODO other code impovments
-
 # In[1]:
 
 
@@ -11,6 +7,8 @@ from pygame.locals import *
 import random
 import math
 import string
+
+#TODO imports do not work from comand line
 from Thesis import Agent
 from Thesis import TextBox
 from Thesis import Button
@@ -72,12 +70,7 @@ def text_objects(text, font):
     return textSurface, textSurface.get_rect()
 
 
-
-
 def new_agent(display):
-    print(type(display))
-    print(display.get_size)
-
     return Agent.Agent(BUTTON_Y+BUTTON_HEIGHT,display)
 
 
@@ -101,6 +94,8 @@ def main():
     button_list.append(go_button)
     button_list.append(stop_button)
 
+    run =True
+    global wait
 
     def pause():
         paused = True
@@ -115,8 +110,7 @@ def main():
                     run=False
                     paused=False
                     wait=False
-                    #pygame.quit()
-                    #quit()
+
                 elif event.type == pygame.KEYDOWN:
                     #https://www.pygame.org/docs/ref/key.html
                     if event.key == pygame.K_g:
@@ -126,10 +120,10 @@ def main():
             #TODO make button to unpause
             pygame.display.update()
 
-    run =True
-    global wait
+
     while run:
         if wait:
+            #Maybe just put pause function here? TODO
             pause()
 
         for event in pygame.event.get():
@@ -162,7 +156,6 @@ def main():
                 mouse = pygame.mouse.get_pos()
 
                 text.active = text.rect.collidepoint(event.pos)
-
                 #if the mouse is above the input box it is not above anything else
                 if not text.active:
                     #check if the mouse is above a button, if it is execute that button
@@ -172,6 +165,11 @@ def main():
                             b.execute()
                             break
 
+                    #check if the mouse is above an agent
+                    for agent in agent_list:
+                        if agent.is_point_over_agent(mouse):
+                            agent.is_selected=not agent.is_selected
+                            break
 
         #list of dictionary of agents that have moved, resets each loop
         moved_agents =[]

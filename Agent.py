@@ -1,20 +1,20 @@
 #http://programarcadegames.com/python_examples/f.php?file=bouncing_balls.py
 
-
-
 #from random import uniform
 import random
 import math
 import pygame
 
-
 AGENT_COLOR=(100,100,100)
 AGENT_SPEED=3
 AGENT_GOODS_NUM=2
 AGENT_RADIUS =20
+
 LIME_GREEN=(50,205,50)
 RED = (255,0,0)
 
+SELECTED_WIDTH=2
+SELECTED_COLOR=RED
 
 class Agent:
 
@@ -87,11 +87,23 @@ class Agent:
         dx=self.x-other_agent.x
         dy=self.y-other_agent.y
         r=AGENT_RADIUS+AGENT_RADIUS
-        if((dx*dx)+(dy*dy)<r*r):
+        if(dx*dx)+(dy*dy)<r*r:
+            return True
+        return False
+
+    def is_point_over_agent(self,point):
+        x,y=point
+        dx=self.x-x
+        dy=self.y-y
+        r=AGENT_RADIUS*AGENT_RADIUS
+        if (dx*dx)+(dy*dy)<r:
             return True
         return False
 
 
     def draw(self):
         #the x and y cordinates are kept as floats, but to draw they need to be int
+
+        if self.is_selected:
+            pygame.draw.circle(self.display, SELECTED_COLOR, [int(round(self.x)), int(round(self.y))], AGENT_RADIUS+SELECTED_WIDTH)
         pygame.draw.circle(self.display, self.color, [int(round(self.x)), int(round(self.y))], AGENT_RADIUS)
