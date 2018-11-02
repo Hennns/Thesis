@@ -10,6 +10,12 @@ AGENT_SPEED=3
 AGENT_GOODS_NUM=2
 AGENT_RADIUS =20
 
+MAX_NUM_GOODS_TO_TRADE=5
+INITIAL_MAX_NUM_GOODS=200
+INITIAL_MAX_PREFERENCE=10
+INITIAL_MIN_NUM_GOODS=0
+INITIAL_MIN_PREFERENCE=1
+
 LIME_GREEN=(50,205,50)
 RED = (255,0,0)
 
@@ -33,10 +39,12 @@ class Agent:
 
         self.color = AGENT_COLOR
         self.is_selected=False
-        self.goods={} #first value is good number (key), second is preference of that good
+        self.goods={}
 
+        #name of good, amount of good and preference of good
         for i in range(AGENT_GOODS_NUM):
-            self.goods["good number: "+str(len(self.goods))] =random.randint(0,100)
+            self.goods["good number: "+str(len(self.goods))] =[random.randint(INITIAL_MIN_NUM_GOODS,INITIAL_MAX_NUM_GOODS), random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE)]
+            #preference should be between 0 and 1 maybe
 
 
     def bounce(self,other_agent):
@@ -54,16 +62,82 @@ class Agent:
         other_agent.change_y=self.change_y*-1
 
     def trade(self,other_agent):
-        print("first agent have ",self.goods)
-        print("second agent have",other_agent.goods)
-        willing_to_trade =bool(random.getrandbits(1))
-        if willing_to_trade:
+        price =self.cobb_douglas_two_goods(other_agent)
+
+
+        if price is not 0:
+            print()
+            print("Before trade")
+            print("first agent info ",self.goods)
+            print("second agent info",other_agent.goods)
+            print("first agent utility ",self.get_utility())
+            print("other agent utility ",other_agent.get_utility())
+            print("The price is",price)
+
             self.color=LIME_GREEN
             other_agent.color=LIME_GREEN
+
+            if price <0.5:
+                self.goods["good number: 0"][0]+=1
+                self.goods["good number: 1"][0]-=price
+
+                other_agent.goods["good number: 0"][0]-=1
+                other_agent.goods["good number: 1"][0]+=price
+            else:
+                self.goods["good number: 1"][0]+=1
+                self.goods["good number: 0"][0]-=price
+
+                other_agent.goods["good number: 1"][0]-=1
+                other_agent.goods["good number: 0"][0]+=price
+            print("after trade")
+            print("first agent info ",self.goods)
+            print("second agent info",other_agent.goods)
+            print("first agent utility ",self.get_utility())
+            print("other agent utility ",other_agent.get_utility())
         else:
             self.color=RED
             other_agent.color=RED
 
+
+    def get_utility(self):
+        utility=0
+        for good in self.goods:
+            #utility for a good is number of that good raised to the power of the preference
+            #utility+=pow(self.goods[good][0],self.goods[good][1])
+            utility+=self.goods[good][0]*self.goods[good][1]
+        return utility
+
+
+
+#https://github.com/cliffclive/econsim/blob/master/econ_sim/econ_sim/transactions.py
+#http://econometheus.blogspot.com/2014/02/measuring-supply-and-demand-in.html
+    def cobb_douglas_two_goods(self, other_agent):
+#TODO make it work with variable number of goods
+        total_goods ={}
+        for good in self.goods:
+            total_goods[good]= self.goods[good][0]+other_agent.goods[good][0]
+
+        # Useful constants for the following calculations
+        alphaX = self.goods["good number: 0"][1] / (self.goods["good number: 0"][1] + self.goods["good number: 1"][1])
+        betaX  = self.goods["good number: 1"][1] / (self.goods["good number: 0"][1] + self.goods["good number: 1"][1])
+        alphaY = other_agent.goods["good number: 0"][1] / (other_agent.goods["good number: 0"][1] + other_agent.goods["good number: 1"][1])
+        betaY  = other_agent.goods["good number: 1"][1] / (other_agent.goods["good number: 0"][1] + other_agent.goods["good number: 1"][1])
+
+        # Equilibrium price of good 1 relative to good 2
+        price = (self.goods["good number: 1"][0] * alphaX +other_agent.goods["good number: 1"][0] * alphaY) / (self.goods["good number: 0"][0] * betaX + self.goods["good number: 0"][0] * betaY)
+
+        #allocation_x = self.demand(price)
+        #allocation_y = (total_goods["good number: 0"] - allocation_x[0], total_goods["good number: 1"] - allocation_x[1])
+
+        #return (allocation_x, allocation_y, price)
+        return price
+
+
+    def demand(self, price):
+        alpha = self.goods["good number: 0"][1] / (self.goods["good number: 0"][1] + self.goods["good number: 1"][1])
+        quantity1 = alpha * (price * self.goods["good number: 0"][0] + self.goods["good number: 0"][0]) / price
+        quantity2 = price * quantity1 * self.goods["good number: 1"][1] / self.goods["good number: 0"][1]
+        return (quantity1, quantity2)
 
     def move(self):
         self.color=AGENT_COLOR

@@ -8,18 +8,22 @@ import random
 import math
 import string
 
-#TODO imports do not work from comand line
+#Do this when running via atom
 from Thesis import Agent
 from Thesis import TextBox
 from Thesis import Button
 
+#Do this when running from command line
+#import Agent
+#import Button
+#import TextBox
 
 #Sources
 #http://usingpython.com/pygame-intro/
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-clock = pygame.time.Clock()
+
 wait=False
 agent_list =[]
 
@@ -78,6 +82,8 @@ def main():
     pygame.init()
     Display = pygame.display.set_mode((WIDTH,HEIGHT))
     pygame.display.set_caption(TITLE)
+    clock = pygame.time.Clock()
+
 
     #Text Font
     smallText = pygame.font.Font("freesansbold.ttf",20)
@@ -100,6 +106,7 @@ def main():
     def pause():
         paused = True
         global wait
+        global run
         TextSurf, TextRect = text_objects("Paused", largeText)
         TextRect.center = ((WIDTH/2),(HEIGHT/2))
         Display.blit(TextSurf, TextRect)
@@ -134,7 +141,7 @@ def main():
                 if event.key == pygame.K_SPACE:
                     agent_list.append(new_agent(Display))
 
-                #press p to pause game
+                #press p to pause
                 elif event.key == pygame.K_p:
                     wait=True
 
@@ -183,7 +190,7 @@ def main():
             agent.move()
             #TODO not most efficient way to loop trhough
             for m in moved_agents:
-                if(agent.collision(m['agent'])):
+                if agent.collision(m['agent']):
                     agent.bounce(m['agent'])
                     agent.trade(m['agent'])
             moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
@@ -197,7 +204,7 @@ def main():
         text.update()
         text.draw(Display)
 
-        # Limit to 60 frames per second
+        #60 Frames per second
         clock.tick(60)
 
         #update the screen
