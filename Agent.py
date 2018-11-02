@@ -52,6 +52,7 @@ class Agent:
         #TODO sqrt is bad, get rid of it
         distance = self.x-other_agent.x, self.y-other_agent.y
         norm=math.sqrt(distance[0]**2+distance[1]**2)
+        #Fast inverse sqrt
         direction=distance[0]/norm,distance[1]/norm
 
         #update new direction

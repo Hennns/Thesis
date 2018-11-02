@@ -1,12 +1,11 @@
 
 # In[1]:
 
-
 import pygame
 from pygame.locals import *
 import random
 import math
-import string
+
 
 #Do this when running via atom
 from Thesis import Agent
@@ -23,7 +22,6 @@ from Thesis import Button
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-
 wait=False
 agent_list =[]
 
@@ -49,16 +47,18 @@ BUTTON_Y=20
 BUTTON_SPACE=10
 
 
-ACCEPTED = string.digits
-
-
 # In[3]:
 
 
 
+
+
 def go_function(button):
-    button.color=LIME_GREEN
-    agent_list.append(new_agent(button.Display))
+    global wait
+    wait=False
+
+    #button.color=LIME_GREEN
+    #agent_list.append(new_agent(button.Display))
 
 def stop_function(button):
     global wait
@@ -93,50 +93,29 @@ def main():
 
     #Make the buttons
     go_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"GO!",smallText,Display,go_function)
-    stop_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,RED,"Stop!",smallText,Display,stop_function)
+    #stop_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,RED,"Stop!",smallText,Display,stop_function)
+    stop_button = Button.button(BUTTON_X,BUTTON_Y,RED,"Pause!",smallText,Display,stop_function)
 
     #put all the buttons in a list
     button_list =[]
     button_list.append(go_button)
-    button_list.append(stop_button)
+    #button_list.append(stop_button)
 
     run =True
     global wait
 
-    def pause():
-        paused = True
-        global wait
-        global run
-        TextSurf, TextRect = text_objects("Paused", largeText)
-        TextRect.center = ((WIDTH/2),(HEIGHT/2))
-        Display.blit(TextSurf, TextRect)
-        while paused:
-            for event in pygame.event.get():
-
-                if event.type == pygame.QUIT:
-                    run=False
-                    paused=False
-                    wait=False
-
-                elif event.type == pygame.KEYDOWN:
-                    #https://www.pygame.org/docs/ref/key.html
-                    if event.key == pygame.K_g:
-                        wait=False
-                        paused = False
-
-            #TODO make button to unpause
-            pygame.display.update()
-
-
     while run:
-        if wait:
-            #Maybe just put pause function here? TODO
-            pause()
-
         for event in pygame.event.get():
             if event.type == QUIT:
                 run=False
+                wait=False
             elif event.type == pygame.KEYDOWN:
+                if wait:
+                    #https://www.pygame.org/docs/ref/key.html
+                    #press g to unpause
+                    if event.key == pygame.K_g:
+                        wait=False
+
                 #Make new agents by pressing space
                 if event.key == pygame.K_SPACE:
                     agent_list.append(new_agent(Display))
@@ -155,7 +134,7 @@ def main():
                         if text.buffer:
                             text.buffer.pop()
                     #if input is valid (only int are) then add it to the end
-                    elif event.unicode in ACCEPTED:
+                    elif event.unicode in text.ACCEPTED:
                         text.buffer.append(event.unicode)
             #left mouse click
             elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
@@ -178,22 +157,24 @@ def main():
                             agent.is_selected=not agent.is_selected
                             break
 
-        #list of dictionary of agents that have moved, resets each loop
-        moved_agents =[]
 
         #Make the display white then draw everything
         Display.fill(WHITE)
+        #list of dictionary of agents that have moved, resets each loop
+        moved_agents =[]
 
 
         #Agent Logic
         for agent in agent_list:
-            agent.move()
-            #TODO not most efficient way to loop trhough
-            for m in moved_agents:
-                if agent.collision(m['agent']):
-                    agent.bounce(m['agent'])
-                    agent.trade(m['agent'])
-            moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
+            #agents dont move if paused
+            if not wait:
+                agent.move()
+                #TODO not most efficient way to loop trhough
+                for m in moved_agents:
+                    if agent.collision(m['agent']):
+                        agent.bounce(m['agent'])
+                        agent.trade(m['agent'])
+                moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
             agent.draw()
 
         #draw the buttons
@@ -203,6 +184,20 @@ def main():
         #draw the input box
         text.update()
         text.draw(Display)
+
+        if wait:
+            TextSurf, TextRect = text_objects("Paused", largeText)
+            TextRect.center = ((WIDTH/2),(HEIGHT/2))
+            Display.blit(TextSurf, TextRect)
+
+            if go_button not in button_list:
+                button_list.append(go_button)
+                button_list.remove(stop_button)
+
+        elif stop_button not in button_list:
+            button_list.append(stop_button)
+            button_list.remove(go_button)
+
 
         #60 Frames per second
         clock.tick(60)

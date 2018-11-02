@@ -1,4 +1,4 @@
-
+import string
 import pygame
 from pygame.locals import *
 
@@ -13,6 +13,7 @@ class TextBox():
         self.buffer = [] #this holds the input
         self.final = None #this is the current input displayed
         self.text_size =10
+        self.ACCEPTED= string.digits
 
         self.rendered = None
         self.render_rect = None
