@@ -14,7 +14,7 @@ MAX_NUM_GOODS_TO_TRADE=5
 INITIAL_MAX_NUM_GOODS=200
 INITIAL_MAX_PREFERENCE=10
 INITIAL_MIN_NUM_GOODS=0
-INITIAL_MIN_PREFERENCE=1
+INITIAL_MIN_PREFERENCE=2
 
 LIME_GREEN=(50,205,50)
 RED = (255,0,0)
@@ -44,7 +44,10 @@ class Agent:
 
         #name of good, amount of good and preference of good
         for i in range(AGENT_GOODS_NUM):
-            self.goods["good number: "+str(len(self.goods))] =[random.randint(INITIAL_MIN_NUM_GOODS,INITIAL_MAX_NUM_GOODS), random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE)]
+            self.goods["good number: "+str(len(self.goods))] =[
+            random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2,
+            random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+            ]
             #preference should be between 0 and 1 maybe
 
 
@@ -75,13 +78,12 @@ class Agent:
         self.color=LIME_GREEN
         other_agent.color=LIME_GREEN
 
-        print("perfect_trade")
-        self.perfect_trade(other_agent)
+        #print("perfect_trade")
+        #self.perfect_trade(other_agent)
+        #self.print_info()
+        #other_agent.print_info()
 
-        self.print_info()
-        other_agent.print_info()
-
-        print("margin_trade")
+        #print("margin_trade")
         self.margin_trade(other_agent)
 
         print("after trade")
@@ -95,13 +97,16 @@ class Agent:
 
     def perfect_trade(self,other_agent):
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
+            print("bigger MRS")
             self.goods["good number: 0"][0]+=self.goods["good number: 0"][1]
             other_agent.goods["good number: 0"][0]-=self.goods["good number: 0"][1]
 
+            #DOES NOT WORK
             self.goods["good number: 1"][0]-=other_agent.goods["good number: 1"][1]
             other_agent.goods["good number: 1"][0]+=other_agent.goods["good number: 1"][1]
 
         else:
+            #THIS WORKS
             other_agent.goods["good number: 0"][0]+=self.goods["good number: 0"][1]
             self.goods["good number: 0"][0]-=self.goods["good number: 0"][1]
 
@@ -111,18 +116,22 @@ class Agent:
 
     #Trade for max gain for self
     def margin_trade(self,other_agent):
+        compensation=math.ceil(other_agent.marginal_rate_of_substitution())
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
+            print("case 1")
             self.goods["good number: 0"][0]+=1
             other_agent.goods["good number: 0"][0]-=1
 
-            self.goods["good number: 1"][0]-=other_agent.marginal_rate_of_substitution()
-            other_agent.goods["good number: 1"][0]+=other_agent.marginal_rate_of_substitution()
+            self.goods["good number: 1"][0]-=compensation
+            other_agent.goods["good number: 1"][0]+=compensation
         else:
+            print("case 2")
             other_agent.goods["good number: 0"][0]+=1
             self.goods["good number: 0"][0]-=1
 
-            other_agent.goods["good number: 1"][0]-=other_agent.marginal_rate_of_substitution()
-            self.goods["good number: 1"][0]+=other_agent.marginal_rate_of_substitution()
+            other_agent.goods["good number: 1"][0]-=compensation
+            self.goods["good number: 1"][0]+=compensation
+
 
     def marginal_rate_of_substitution(self):
         return self.goods["good number: 0"][1]/self.goods["good number: 1"][1]

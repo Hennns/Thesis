@@ -198,10 +198,7 @@ def main():
         #draw the buttons
         for b in button_list:
             b.draw_button()
-
-
-
-        #draw the input box
+    #draw the input box
         text.update()
         text.draw(Display)
 
