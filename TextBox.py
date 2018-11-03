@@ -1,4 +1,4 @@
-
+import string
 import pygame
 from pygame.locals import *
 
@@ -13,6 +13,7 @@ class TextBox():
         self.buffer = [] #this holds the input
         self.final = None #this is the current input displayed
         self.text_size =10
+        self.ACCEPTED= string.digits
 
         self.rendered = None
         self.render_rect = None
@@ -34,8 +35,9 @@ class TextBox():
         self.__dict__.update(defaults)
 
 
-
     def execute(self):
+        if not self.buffer:
+            return 0
         input = int("".join(self.buffer))
         self.buffer = []
         return input
