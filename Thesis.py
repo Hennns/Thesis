@@ -6,6 +6,7 @@ from pygame.locals import *
 import random
 import math
 
+from scipy import spatial
 
 #Do this when running via atom
 from Thesis import Agent
@@ -22,7 +23,7 @@ from Thesis import Button
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-wait=False
+wait=True
 agent_list =[]
 
 
@@ -30,8 +31,8 @@ agent_list =[]
 
 #Constants Box
 
-WIDTH= 500
-HEIGHT =500
+WIDTH= 600
+HEIGHT =600
 TITLE="Title"
 
 WHITE = (255,255,255)
@@ -39,6 +40,7 @@ BLACK = (0,0,0)
 RED = (255,0,0)
 GREEN =(0,255,0)
 LIME_GREEN=(50,205,50)
+LIGTH_GREY = (211,211,211)
 
 BUTTON_WIDTH=100
 BUTTON_HEIGHT=60
@@ -50,20 +52,20 @@ BUTTON_SPACE=10
 # In[3]:
 
 
+def reset_function(button):
+    global agent_list
+    agent_list =[]
 
-
-
-def go_function(button):
+def pause_function(button):
     global wait
-    wait=False
+    wait = not wait
 
-    #button.color=LIME_GREEN
-    #agent_list.append(new_agent(button.Display))
-
-def stop_function(button):
-    global wait
-    wait=True
-
+    if wait:
+        button.color=GREEN
+        button.text="Start"
+    else:
+        button.color=RED
+        button.text="Pause"
 
 # In[4]:
 
@@ -75,8 +77,13 @@ def text_objects(text, font):
 
 
 def new_agent(display):
-    return Agent.Agent(BUTTON_Y+BUTTON_HEIGHT,display)
+    return Agent.Agent(BUTTON_Y+BUTTON_HEIGHT,display,len(agent_list))
 
+def print_total_utility():
+    global_utility=0
+    for agent in agent_list:
+        global_utility+=agent.get_utility()
+    print(global_utility)
 
 def main():
     pygame.init()
@@ -92,14 +99,13 @@ def main():
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
     #Make the buttons
-    go_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"GO!",smallText,Display,go_function)
-    #stop_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,RED,"Stop!",smallText,Display,stop_function)
-    stop_button = Button.button(BUTTON_X,BUTTON_Y,RED,"Pause!",smallText,Display,stop_function)
+    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",smallText,Display,reset_function)
+    pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
 
     #put all the buttons in a list
     button_list =[]
-    button_list.append(go_button)
-    #button_list.append(stop_button)
+    button_list.append(reset_button)
+    button_list.append(pause_button)
 
     run =True
     global wait
@@ -120,7 +126,7 @@ def main():
                 if event.key == pygame.K_SPACE:
                     agent_list.append(new_agent(Display))
 
-                #press p to pause
+                #pres p to pause
                 elif event.key == pygame.K_p:
                     wait=True
 
@@ -157,11 +163,11 @@ def main():
                             agent.is_selected=not agent.is_selected
                             break
 
-
         #Make the display white then draw everything
         Display.fill(WHITE)
         #list of dictionary of agents that have moved, resets each loop
         moved_agents =[]
+    #    cordinates=[]
 
 
         #Agent Logic
@@ -169,17 +175,31 @@ def main():
             #agents dont move if paused
             if not wait:
                 agent.move()
-                #TODO not most efficient way to loop trhough
+    #            if len(cordinates) >0:
+                    #https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.query.html#scipy.spatial.KDTree.query
+    #                tree=spatial.KDTree(cordinates)
+    #                distance, index = tree.query((agent.x,agent.y),k=1,distance_upper_bound=Agent.AGENT_RADIUS*2)
+    #                if not math.isinf(distance):
+    #                    agent.bounce(moved_agents[index]['agent'])
+    #                    agent.trade(moved_agents[index]['agent'])
+
+                #TODO likely not most efficient way to loop
+                #KDTree is maybe faster if done rigth
                 for m in moved_agents:
                     if agent.collision(m['agent']):
                         agent.bounce(m['agent'])
                         agent.trade(m['agent'])
+                        #print_total_utility()
+                        break
                 moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
+    #            cordinates.append((agent.x,agent.y))
             agent.draw()
 
         #draw the buttons
         for b in button_list:
             b.draw_button()
+
+
 
         #draw the input box
         text.update()
@@ -190,13 +210,6 @@ def main():
             TextRect.center = ((WIDTH/2),(HEIGHT/2))
             Display.blit(TextSurf, TextRect)
 
-            if go_button not in button_list:
-                button_list.append(go_button)
-                button_list.remove(stop_button)
-
-        elif stop_button not in button_list:
-            button_list.append(stop_button)
-            button_list.remove(go_button)
 
 
         #60 Frames per second

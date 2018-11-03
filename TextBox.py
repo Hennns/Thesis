@@ -35,8 +35,9 @@ class TextBox():
         self.__dict__.update(defaults)
 
 
-
     def execute(self):
+        if not self.buffer:
+            return 0
         input = int("".join(self.buffer))
         self.buffer = []
         return input
