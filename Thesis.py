@@ -77,7 +77,7 @@ def graph_function(button):
     global wait
     wait =True
     button.Display.fill(WHITE)
-    pygame.draw.lines(button.Display, RED, True, utility_tracker, 1)
+    pygame.draw.lines(button.Display, RED, False, utility_tracker, 1)
     print(utility_tracker)
     pygame.display.flip()
 
