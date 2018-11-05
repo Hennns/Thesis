@@ -1,26 +1,30 @@
 #http://programarcadegames.com/python_examples/f.php?file=bouncing_balls.py
 
-#from random import uniform
 import random
 import math
 import pygame
 
-AGENT_COLOR=(100,100,100)
-AGENT_SPEED=3
-AGENT_GOODS_NUM=2
-AGENT_RADIUS =20
+COLOR=(100,100,100)
+SPEED=3
+NUM_GOODS=2
+RADIUS =20
+TRADE_MULTIPLIER=2
+
 
 MAX_NUM_GOODS_TO_TRADE=5
-INITIAL_MAX_NUM_GOODS=200
+INITIAL_MAX_NUM_GOODS=50
 INITIAL_MAX_PREFERENCE=10
 INITIAL_MIN_NUM_GOODS=0
 INITIAL_MIN_PREFERENCE=2
 
 LIME_GREEN=(50,205,50)
 RED = (255,0,0)
+WHITE = (255,255,255)
+YELLOW= (255,255,0)
 
 SELECTED_WIDTH=2
-SELECTED_COLOR=RED
+SELECTED_COLOR=YELLOW
+
 
 class Agent:
 
@@ -30,20 +34,20 @@ class Agent:
         self.display_width,self.display_heigth= display.get_size()
 
         self.y_adjustment=y_adjustment
-        self.x =random.randrange(AGENT_RADIUS,self.display_width-AGENT_RADIUS)
-        self.y =random.randrange(AGENT_RADIUS+self.y_adjustment,self.display_heigth-AGENT_RADIUS)
+        self.x =random.randrange(RADIUS,self.display_width-RADIUS)
+        self.y =random.randrange(RADIUS+self.y_adjustment,self.display_heigth-RADIUS)
 
         angle = random.uniform(0,2*math.pi)
-        self.change_x =math.cos(angle)*AGENT_SPEED
-        self.change_y =math.sin(angle)*AGENT_SPEED
+        self.change_x =math.cos(angle)*SPEED
+        self.change_y =math.sin(angle)*SPEED
 
-        self.color = AGENT_COLOR
+        self.color = COLOR
         self.is_selected=False
         self.id=ID
         self.goods={}
 
         #name of good, amount of good and preference of good
-        for i in range(AGENT_GOODS_NUM):
+        for i in range(NUM_GOODS):
             self.goods["good number: "+str(len(self.goods))] =[
             random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2,
             random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
@@ -60,8 +64,8 @@ class Agent:
         direction=distance[0]/norm,distance[1]/norm
 
         #update new direction
-        self.change_x=direction[0]*AGENT_SPEED
-        self.change_y=direction[1]*AGENT_SPEED
+        self.change_x=direction[0]*SPEED
+        self.change_y=direction[1]*SPEED
 
         other_agent.change_x=self.change_x*-1
         other_agent.change_y=self.change_y*-1
@@ -69,28 +73,17 @@ class Agent:
 
 
     def trade(self,other_agent):
-
         print()
-        print("Before trade")
         self.print_info()
         other_agent.print_info()
-
-        self.color=LIME_GREEN
-        other_agent.color=LIME_GREEN
-
-        #print("perfect_trade")
-        #self.perfect_trade(other_agent)
-        #self.print_info()
-        #other_agent.print_info()
-
-        #print("margin_trade")
         self.margin_trade(other_agent)
-
-        print("after trade")
         self.print_info()
         other_agent.print_info()
 
-        if False:
+        if self.margin_trade(other_agent):
+            self.color=LIME_GREEN
+            other_agent.color=LIME_GREEN
+        else:
             self.color=RED
             other_agent.color=RED
 
@@ -114,27 +107,44 @@ class Agent:
             self.goods["good number: 1"][0]+=other_agent.goods["good number: 1"][1]
 
 
-    #Trade for max gain for self
+    #Trade on the margin of the other_agent
     def margin_trade(self,other_agent):
-        compensation=math.ceil(other_agent.marginal_rate_of_substitution())
+        compensation=other_agent.marginal_rate_of_substitution()
+        compensation=compensation*TRADE_MULTIPLIER
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
-            print("case 1")
-            self.goods["good number: 0"][0]+=1
-            other_agent.goods["good number: 0"][0]-=1
+            if other_agent.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or self.goods["good number: 1"][0]-compensation <0:
+                return False
+            print("bigger mrs")
+            print("compensation is",compensation)
+            self.goods["good number: 0"][0]+=TRADE_MULTIPLIER
+            other_agent.goods["good number: 0"][0]-=TRADE_MULTIPLIER
 
             self.goods["good number: 1"][0]-=compensation
             other_agent.goods["good number: 1"][0]+=compensation
         else:
-            print("case 2")
-            other_agent.goods["good number: 0"][0]+=1
-            self.goods["good number: 0"][0]-=1
+            if self.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or other_agent.goods["good number: 1"][0]-compensation <0:
+                return False
 
-            other_agent.goods["good number: 1"][0]-=compensation
-            self.goods["good number: 1"][0]+=compensation
+            print("smaller mrs")
+            print("compensation is",compensation)
+            compensation=other_agent.marginal_rate_of_substitution_reverse()
+            compensation=compensation*TRADE_MULTIPLIER
+            print("new compensation is",compensation)
+
+            self.goods["good number: 0"][0]-=compensation
+            other_agent.goods["good number: 0"][0]+=compensation
+
+            self.goods["good number: 1"][0]+=TRADE_MULTIPLIER
+            other_agent.goods["good number: 1"][0]-=TRADE_MULTIPLIER
+
+        return True
 
 
     def marginal_rate_of_substitution(self):
         return self.goods["good number: 0"][1]/self.goods["good number: 1"][1]
+
+    def marginal_rate_of_substitution_reverse(self):
+        return self.goods["good number: 1"][1]/self.goods["good number: 0"][1]
 
 
     def get_utility(self):
@@ -148,18 +158,18 @@ class Agent:
         print(" agent",self.id," utility ",self.get_utility())
 
     def move(self):
-        self.color=AGENT_COLOR
+        self.color=COLOR
 
         # Move the center
         self.x += self.change_x
         self.y += self.change_y
 
         #Stay in bounds
-        if self.y > self.display_heigth - AGENT_RADIUS or self.y < AGENT_RADIUS+self.y_adjustment:
+        if self.y > self.display_heigth - RADIUS or self.y < RADIUS+self.y_adjustment:
             self.change_y *= -1
             self.y+=self.change_y
-        #TODO if?
-        elif self.x > self.display_width-AGENT_RADIUS or self.x < AGENT_RADIUS:
+
+        elif self.x > self.display_width-RADIUS or self.x < RADIUS:
             self.change_x *= -1
             self.x+=self.change_x
 
@@ -168,7 +178,7 @@ class Agent:
         #http://cgp.wikidot.com/circle-to-circle-collision-detection
         dx=self.x-other_agent.x
         dy=self.y-other_agent.y
-        r=AGENT_RADIUS+AGENT_RADIUS
+        r=RADIUS+RADIUS
         if(dx*dx)+(dy*dy)<r*r:
             return True
         return False
@@ -177,7 +187,7 @@ class Agent:
         x,y=point
         dx=self.x-x
         dy=self.y-y
-        r=AGENT_RADIUS*AGENT_RADIUS
+        r=RADIUS*RADIUS
         if (dx*dx)+(dy*dy)<r:
             return True
         return False
@@ -185,7 +195,11 @@ class Agent:
 
     def draw(self):
         #the x and y cordinates are kept as floats, but to draw they need to be int
-
         if self.is_selected:
-            pygame.draw.circle(self.display, SELECTED_COLOR, [int(round(self.x)), int(round(self.y))], AGENT_RADIUS+SELECTED_WIDTH)
-        pygame.draw.circle(self.display, self.color, [int(round(self.x)), int(round(self.y))], AGENT_RADIUS)
+            pygame.draw.circle(self.display, SELECTED_COLOR, [int(round(self.x)), int(round(self.y))], RADIUS+SELECTED_WIDTH)
+        pygame.draw.circle(self.display, self.color, [int(round(self.x)), int(round(self.y))], RADIUS)
+
+    def remove_selected_circle(self):
+        pygame.draw.circle(self.display,WHITE, [int(round(self.x)), int(round(self.y))], RADIUS+SELECTED_WIDTH)
+        self.draw()
+        
