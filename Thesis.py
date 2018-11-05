@@ -2,7 +2,6 @@
 # In[1]:
 
 import pygame
-#from pygame.locals import *
 import random
 import math
 
@@ -55,7 +54,9 @@ BUTTON_SPACE=10
 
 def reset_function(button):
     global agent_list
+    global utility_tracker
     agent_list =[]
+    utility_tracker=[]
     button.Display.fill(WHITE)
 
 
@@ -113,7 +114,7 @@ def move_agents():
                 break
         moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
 #            cordinates.append((agent.x,agent.y))
-    utility_tracker.append((len(utility_tracker),(get_utility()/initial_utility)*100))
+    utility_tracker.append((len(utility_tracker),HEIGHT-(get_utility()/initial_utility)*100))
 
 
 def get_utility():
