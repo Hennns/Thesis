@@ -109,9 +109,10 @@ class Agent:
 
     #Trade on the margin of the other_agent
     def margin_trade(self,other_agent):
-        compensation=other_agent.marginal_rate_of_substitution()
-        compensation=compensation*TRADE_MULTIPLIER
+
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
+            compensation=other_agent.marginal_rate_of_substitution()
+            compensation=compensation*TRADE_MULTIPLIER
             if other_agent.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or self.goods["good number: 1"][0]-compensation <0:
                 return False
             print("bigger mrs")
@@ -122,14 +123,13 @@ class Agent:
             self.goods["good number: 1"][0]-=compensation
             other_agent.goods["good number: 1"][0]+=compensation
         else:
+            compensation=other_agent.marginal_rate_of_substitution_reverse()
+            compensation=compensation*TRADE_MULTIPLIER
             if self.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or other_agent.goods["good number: 1"][0]-compensation <0:
                 return False
 
             print("smaller mrs")
             print("compensation is",compensation)
-            compensation=other_agent.marginal_rate_of_substitution_reverse()
-            compensation=compensation*TRADE_MULTIPLIER
-            print("new compensation is",compensation)
 
             self.goods["good number: 0"][0]-=compensation
             other_agent.goods["good number: 0"][0]+=compensation
@@ -202,4 +202,3 @@ class Agent:
     def remove_selected_circle(self):
         pygame.draw.circle(self.display,WHITE, [int(round(self.x)), int(round(self.y))], RADIUS+SELECTED_WIDTH)
         self.draw()
-        

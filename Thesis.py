@@ -28,7 +28,8 @@ import TextBox
 #Global things
 wait=True
 agent_list =[]
-
+utility_tracker=[]
+initial_utility=0
 
 # In[2]:
 WIDTH= 600
@@ -72,6 +73,15 @@ def step_function(button):
     draw_agents()
 
 
+def graph_function(button):
+    global wait
+    wait =True
+    button.Display.fill(WHITE)
+    pygame.draw.lines(button.Display, RED, True, utility_tracker, 1)
+    print(utility_tracker)
+    pygame.display.flip()
+
+
 # In[4]:
 
 # In[5]:
@@ -103,7 +113,14 @@ def move_agents():
                 break
         moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
 #            cordinates.append((agent.x,agent.y))
+    utility_tracker.append((len(utility_tracker),(get_utility()/initial_utility)*100))
 
+
+def get_utility():
+    utility=0
+    for agent in agent_list:
+        utility+=agent.get_utility()
+    return utility
 
 def draw_agents():
     for agent in agent_list:
@@ -117,8 +134,11 @@ def text_objects(text, font):
 
 
 def new_agent(display):
+    global initial_utility
     agent=Agent.Agent(BUTTON_Y+BUTTON_HEIGHT,display,len(agent_list))
     agent.draw()
+
+    initial_utility+=agent.get_utility()
     return agent
 
 
@@ -147,15 +167,18 @@ def main():
     reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",smallText,Display,reset_function)
     pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",smallText,Display,step_function)
+    graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",smallText,Display,graph_function)
 
     #put all the buttons in a list
     button_list =[]
     button_list.append(reset_button)
     button_list.append(pause_button)
     button_list.append(step_button)
+    button_list.append(graph_button)
 
     run =True
     global wait
+
 
     while run:
         for event in pygame.event.get():
