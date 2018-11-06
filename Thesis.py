@@ -109,6 +109,8 @@ def move_agents():
         for m in moved_agents:
             if agent.collision(m['agent']):
                 agent.bounce(m['agent'])
+                if random.getrandbits(1):
+                    m['agent'].trade(agent)
                 agent.trade(m['agent'])
                 #print_total_utility()
                 break
