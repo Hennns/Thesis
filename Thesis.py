@@ -3,9 +3,9 @@
 
 import pygame
 import random
-import math
 
-from scipy import spatial
+#import math
+#from scipy import spatial
 
 
 #Do this when running via atom
@@ -48,6 +48,7 @@ BUTTON_X=20
 BUTTON_Y=20
 BUTTON_SPACE=10
 
+num_goods_to_trade=2
 
 # In[3]:
 
@@ -110,8 +111,8 @@ def move_agents():
             if agent.collision(m['agent']):
                 agent.bounce(m['agent'])
                 if random.getrandbits(1):
-                    m['agent'].trade(agent)
-                agent.trade(m['agent'])
+                    m['agent'].trade(agent,num_goods_to_trade)
+                agent.trade(m['agent'],num_goods_to_trade)
                 #print_total_utility()
                 break
         moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})

@@ -8,10 +8,7 @@ COLOR=(100,100,100)
 SPEED=3
 NUM_GOODS=2
 RADIUS =20
-TRADE_MULTIPLIER=2
 
-
-MAX_NUM_GOODS_TO_TRADE=5
 INITIAL_MAX_NUM_GOODS=50
 INITIAL_MAX_PREFERENCE=10
 INITIAL_MIN_NUM_GOODS=0
@@ -72,60 +69,42 @@ class Agent:
 
 
 
-    def trade(self,other_agent):
+    def trade(self,other_agent,num_goods_to_trade):
         print()
         self.print_info()
         other_agent.print_info()
-        self.margin_trade(other_agent)
-        self.print_info()
-        other_agent.print_info()
 
-        if self.margin_trade(other_agent):
+        if self.margin_trade(other_agent,num_goods_to_trade):
             self.color=LIME_GREEN
             other_agent.color=LIME_GREEN
+            self.print_info()
+            other_agent.print_info()
         else:
             self.color=RED
             other_agent.color=RED
 
 
-    def perfect_trade(self,other_agent):
-        if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
-            print("bigger MRS")
-            self.goods["good number: 0"][0]+=self.goods["good number: 0"][1]
-            other_agent.goods["good number: 0"][0]-=self.goods["good number: 0"][1]
-
-            #DOES NOT WORK
-            self.goods["good number: 1"][0]-=other_agent.goods["good number: 1"][1]
-            other_agent.goods["good number: 1"][0]+=other_agent.goods["good number: 1"][1]
-
-        else:
-            #THIS WORKS
-            other_agent.goods["good number: 0"][0]+=self.goods["good number: 0"][1]
-            self.goods["good number: 0"][0]-=self.goods["good number: 0"][1]
-
-            other_agent.goods["good number: 1"][0]-=other_agent.goods["good number: 1"][1]
-            self.goods["good number: 1"][0]+=other_agent.goods["good number: 1"][1]
 
 
     #Trade on the margin of the other_agent
-    def margin_trade(self,other_agent):
+    def margin_trade(self,other_agent,num_goods_to_trade):
 
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
             compensation=other_agent.marginal_rate_of_substitution()
-            compensation=compensation*TRADE_MULTIPLIER
-            if other_agent.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or self.goods["good number: 1"][0]-compensation <0:
+            compensation=compensation*num_goods_to_trade
+            if other_agent.goods["good number: 0"][0]-num_goods_to_trade <0 or self.goods["good number: 1"][0]-compensation <0:
                 return False
             print("bigger mrs")
             print("compensation is",compensation)
-            self.goods["good number: 0"][0]+=TRADE_MULTIPLIER
-            other_agent.goods["good number: 0"][0]-=TRADE_MULTIPLIER
+            self.goods["good number: 0"][0]+=num_goods_to_trade
+            other_agent.goods["good number: 0"][0]-=num_goods_to_trade
 
             self.goods["good number: 1"][0]-=compensation
             other_agent.goods["good number: 1"][0]+=compensation
         else:
             compensation=other_agent.marginal_rate_of_substitution_reverse()
-            compensation=compensation*TRADE_MULTIPLIER
-            if self.goods["good number: 0"][0]-TRADE_MULTIPLIER <0 or other_agent.goods["good number: 1"][0]-compensation <0:
+            compensation=compensation*num_goods_to_trade
+            if self.goods["good number: 0"][0]-num_goods_to_trade <0 or other_agent.goods["good number: 1"][0]-compensation <0:
                 return False
 
             print("smaller mrs")
@@ -134,10 +113,21 @@ class Agent:
             self.goods["good number: 0"][0]-=compensation
             other_agent.goods["good number: 0"][0]+=compensation
 
-            self.goods["good number: 1"][0]+=TRADE_MULTIPLIER
-            other_agent.goods["good number: 1"][0]-=TRADE_MULTIPLIER
+            self.goods["good number: 1"][0]+=num_goods_to_trade
+            other_agent.goods["good number: 1"][0]-=num_goods_to_trade
 
         return True
+
+
+    def middle_trade(self,other_agent,num_goods_to_trade):
+        if margin_trade(self,other_agent,num_goods_to_trade/2):
+            self.color=LIME_GREEN
+        else:
+            self.color=RED
+        if margin_trade(other_agent,self,num_goods_to_trade/2):
+            other_agent.color=LIME_GREEN
+        else:
+            other_agent.color=RED
 
 
     def marginal_rate_of_substitution(self):
