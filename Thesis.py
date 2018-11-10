@@ -1,23 +1,29 @@
 
 # In[1]:
+"""TODO:
+colors in seperate file
+cobb duglas utility
+binning for collision detection
+"""
+
+
 
 import pygame
 import random
-
-#import math
-#from scipy import spatial
-
+import numpy as np
 
 #Do this when running via atom
 from Thesis import Agent
 from Thesis import TextBox
 from Thesis import Button
+from Thesis.ColorDefinitions import *
 """
 
 #Do this when running from command line
 import Agent
 import Button
 import TextBox
+import ColorDefinitions *
 """
 
 #Sources
@@ -25,30 +31,32 @@ import TextBox
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-wait=True
-agent_list =[]
-utility_tracker=[]
-initial_utility=0
+wait = True
+agent_list = []
+utility_tracker = []
+initial_utility = 1
 
 # In[2]:
 WIDTH= 600
 HEIGHT =600
 TITLE="Title"
 
-WHITE = (255,255,255)
-BLACK = (0,0,0)
-RED = (255,0,0)
-GREEN =(0,255,0)
-LIME_GREEN=(50,205,50)
-LIGTH_GREY = (211,211,211)
+BUTTON_WIDTH = 100
+BUTTON_HEIGHT = 60
+BUTTON_X = 20
+BUTTON_Y = 20
+BUTTON_SPACE = 10
 
-BUTTON_WIDTH=100
-BUTTON_HEIGHT=60
-BUTTON_X=20
-BUTTON_Y=20
-BUTTON_SPACE=10
+
+
+
+TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
+
 
 num_goods_to_trade=2
+
+
+
 
 # In[3]:
 
@@ -56,8 +64,10 @@ num_goods_to_trade=2
 def reset_function(button):
     global agent_list
     global utility_tracker
+    global initial_utility
     agent_list =[]
     utility_tracker=[]
+    initial_utility=1
     button.Display.fill(WHITE)
 
 
@@ -85,28 +95,29 @@ def graph_function(button):
 
 
 # In[4]:
+def create_box_map():
+    num_rows=8
+    num_collums=8
+    rows = [WIDTH/num_rows*x for x in range(num_rows)]
+    collums = [HEIGHT/num_collums*x for x in range(num_collums)]
 
+    w, h = 8, 8;
+    BOX_MAP = [[0 for x in range(w)] for y in range(h)]
+
+    for r in range(8):
+        for c in range(8):
+            BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],WIDTH/num_rows,HEIGHT/num_collums)
+
+    return BOX_MAP
 # In[5]:
 
 def move_agents():
     #list of dictionary of agents
     moved_agents =[]
-#    cordinates=[]
-
 
     #Agent Logic
     for agent in agent_list:
         agent.move()
-#            if len(cordinates) >0:
-                #https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.query.html#scipy.spatial.KDTree.query
-#                tree=spatial.KDTree(cordinates)
-#                distance, index = tree.query((agent.x,agent.y),k=1,distance_upper_bound=Agent.AGENT_RADIUS*2)
-#                if not math.isinf(distance):
-#                    agent.bounce(moved_agents[index]['agent'])
-#                    agent.trade(moved_agents[index]['agent'])
-
-            #TODO likely not most efficient way to loop
-            #KDTree is maybe faster if done rigth
         for m in moved_agents:
             if agent.collision(m['agent']):
                 agent.bounce(m['agent'])
@@ -116,7 +127,6 @@ def move_agents():
                 #print_total_utility()
                 break
         moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
-#            cordinates.append((agent.x,agent.y))
     utility_tracker.append((len(utility_tracker),HEIGHT-(get_utility()/initial_utility)*100))
 
 
@@ -135,11 +145,9 @@ def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
-
-
 def new_agent(display):
     global initial_utility
-    agent=Agent.Agent(BUTTON_Y+BUTTON_HEIGHT,display,len(agent_list))
+    agent=Agent.Agent(TOP_BORDER,display,len(agent_list))
     agent.draw()
 
     initial_utility+=agent.get_utility()
@@ -155,6 +163,7 @@ def print_total_utility():
 
 
 def main():
+    global wait
     pygame.init()
     Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
     #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
@@ -164,26 +173,23 @@ def main():
 
     #Text Font
     smallText = pygame.font.Font("freesansbold.ttf",20)
-
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    #Make the buttons
     reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",smallText,Display,reset_function)
     pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",smallText,Display,step_function)
     graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",smallText,Display,graph_function)
 
-    #put all the buttons in a list
-    button_list =[]
+    button_list=[]
     button_list.append(reset_button)
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(graph_button)
 
+    BOX_MAP=create_box_map()
+
+
     run =True
-    global wait
-
-
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -272,5 +278,7 @@ def main():
 
     #end of loop we exit
     pygame.quit()
+
+
 if __name__ == "__main__":
     main()

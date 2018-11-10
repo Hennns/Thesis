@@ -4,6 +4,9 @@ import random
 import math
 import pygame
 
+#import ColorDefinitions *
+from Thesis.ColorDefinitions import *
+
 COLOR=(100,100,100)
 SPEED=3
 NUM_GOODS=2
@@ -14,15 +17,12 @@ INITIAL_MAX_PREFERENCE=10
 INITIAL_MIN_NUM_GOODS=0
 INITIAL_MIN_PREFERENCE=2
 
-LIME_GREEN=(50,205,50)
-RED = (255,0,0)
-WHITE = (255,255,255)
-YELLOW= (255,255,0)
+
 
 SELECTED_WIDTH=2
-SELECTED_COLOR=YELLOW
+SELECTED_COLOR=DARK_YELLOW
 
-
+#change color as endowments change
 class Agent:
 
     #Initialize variables
