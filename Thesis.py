@@ -48,14 +48,27 @@ BUTTON_Y = 20
 BUTTON_SPACE = 10
 
 
-
+BIN_NUM_ROWS=8
+BIN_NUM_COLLUMS=8
 
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
-
 
 num_goods_to_trade=2
 
 
+
+#Create BOX map
+rows = [(WIDTH/BIN_NUM_ROWS)*x for x in range(BIN_NUM_ROWS)]
+collums = [(HEIGHT/BIN_NUM_COLLUMS)*x for x in range(BIN_NUM_COLLUMS)]
+
+BOX_MAP = [[0 for x in range(BIN_NUM_COLLUMS)] for y in range(BIN_NUM_ROWS)]
+
+for r in range(BIN_NUM_ROWS):
+    for c in range(BIN_NUM_COLLUMS):
+        BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],WIDTH/BIN_NUM_ROWS,HEIGHT/BIN_NUM_COLLUMS)
+
+#each row+collum represents a box and contains a list of agents in that box
+box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
 
 
 # In[3]:
@@ -95,38 +108,81 @@ def graph_function(button):
 
 
 # In[4]:
-def create_box_map():
-    num_rows=8
-    num_collums=8
-    rows = [WIDTH/num_rows*x for x in range(num_rows)]
-    collums = [HEIGHT/num_collums*x for x in range(num_collums)]
 
-    w, h = 8, 8;
-    BOX_MAP = [[0 for x in range(w)] for y in range(h)]
+def get_box(agent):
+    x,y=agent.get_location()
+    for row in range(len(BOX_MAP)):
+        for col in range(len(BOX_MAP[row])):
+            if BOX_MAP[row][col].collidepoint(x,y):
+                return (row,col)
+    #This should never happen
+    print("BUGBUGBGBUGBG")
+    print("x is ",x)
+    print("y is ",y)
 
-    for r in range(8):
-        for c in range(8):
-            BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],WIDTH/num_rows,HEIGHT/num_collums)
+def get_nearby_agents(current_r,current_c):
+    global box_tracker
+    nearby_agents=[]
+    for r in range(-1,2):
+        for c in range(-1,2):
+            try:
+                nearby_agents.extend(box_tracker[current_r-r][current_c-c])
+            except IndexError:
+                continue
 
-    return BOX_MAP
+    return nearby_agents
+
+def get_nearby_boxes(current_r,current_c):
+    nearby_boxes=[]
+    for row in range(-1,2):
+        if 0<= current_r-row <BIN_NUM_ROWS:
+            for col in range(-1,2):
+                if 0<=current_c-col <BIN_NUM_COLLUMS and not row==col==0:
+                    nearby_boxes.append((current_r-row,current_c-col))
+    return nearby_boxes
+
+#Idea: Use direction agent is moving to find the new box?
+def find_new_box(agent):
+    r,c=agent.box
+    x,y=agent.get_location()
+
+    #Check the old box first, since the agent is most likely there
+    if BOX_MAP[r][c].collidepoint(x,y):
+        box_tracker[r][c].append(agent)
+        return
+
+    #Then check other nearby boxes
+    for row,col in get_nearby_boxes(r,c):
+        if BOX_MAP[row][col].collidepoint(x,y):
+            box_tracker[row][col].append(agent)
+            agent.box=(row,col)
+            return
+    print(get_nearby_boxes(r,c))
+    print("current box",r,c)
+    print("x,y",x,y)
+
+    print("could not find box")
 # In[5]:
 
-def move_agents():
-    #list of dictionary of agents
-    moved_agents =[]
 
-    #Agent Logic
+def move_agents():
+    global box_tracker
+    box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
     for agent in agent_list:
+        r,c = agent.box
+
         agent.move()
-        for m in moved_agents:
-            if agent.collision(m['agent']):
-                agent.bounce(m['agent'])
+        for other_agent in get_nearby_agents(r,c):
+            if agent.collision(other_agent):
+                agent.bounce(other_agent)
                 if random.getrandbits(1):
-                    m['agent'].trade(agent,num_goods_to_trade)
-                agent.trade(m['agent'],num_goods_to_trade)
+                    other_agent.trade(agent,num_goods_to_trade)
+                else:
+                    agent.trade(other_agent,num_goods_to_trade)
                 #print_total_utility()
                 break
-        moved_agents.append({'x':agent.x,'y':agent.y,'agent':agent})
+        find_new_box(agent)
+
     utility_tracker.append((len(utility_tracker),HEIGHT-(get_utility()/initial_utility)*100))
 
 
@@ -148,9 +204,12 @@ def text_objects(text, font):
 def new_agent(display):
     global initial_utility
     agent=Agent.Agent(TOP_BORDER,display,len(agent_list))
-    agent.draw()
 
+    agent.box=get_box(agent)
+
+    agent.draw()
     initial_utility+=agent.get_utility()
+
     return agent
 
 
@@ -185,9 +244,6 @@ def main():
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(graph_button)
-
-    BOX_MAP=create_box_map()
-
 
     run =True
     while run:

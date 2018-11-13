@@ -10,7 +10,7 @@ from Thesis.ColorDefinitions import *
 COLOR=(100,100,100)
 SPEED=3
 NUM_GOODS=2
-RADIUS =20
+RADIUS =5
 
 INITIAL_MAX_NUM_GOODS=50
 INITIAL_MAX_PREFERENCE=10
@@ -43,6 +43,8 @@ class Agent:
         self.id=ID
         self.goods={}
 
+        self.box=(0,0)
+
         #name of good, amount of good and preference of good
         for i in range(NUM_GOODS):
             self.goods["good number: "+str(len(self.goods))] =[
@@ -54,10 +56,14 @@ class Agent:
 
     def bounce(self,other_agent):
         #calculate how to bounce the agents
-        #TODO sqrt is bad, get rid of it
+        #TODO sqrt is bad, get rid of it (or maybe not that bad)
         distance = self.x-other_agent.x, self.y-other_agent.y
         norm=math.sqrt(distance[0]**2+distance[1]**2)
         #Fast inverse sqrt
+
+        #Float division by Zero error (two agents spawn on top of each other?)
+        #Agent bounce on itself?
+
         direction=distance[0]/norm,distance[1]/norm
 
         #update new direction
@@ -70,15 +76,15 @@ class Agent:
 
 
     def trade(self,other_agent,num_goods_to_trade):
-        print()
-        self.print_info()
-        other_agent.print_info()
+        #print()
+        #self.print_info()
+        #other_agent.print_info()
 
         if self.margin_trade(other_agent,num_goods_to_trade):
             self.color=LIME_GREEN
             other_agent.color=LIME_GREEN
-            self.print_info()
-            other_agent.print_info()
+            #self.print_info()
+            #other_agent.print_info()
         else:
             self.color=RED
             other_agent.color=RED
@@ -94,8 +100,8 @@ class Agent:
             compensation=compensation*num_goods_to_trade
             if other_agent.goods["good number: 0"][0]-num_goods_to_trade <0 or self.goods["good number: 1"][0]-compensation <0:
                 return False
-            print("bigger mrs")
-            print("compensation is",compensation)
+            #print("bigger mrs")
+            #print("compensation is",compensation)
             self.goods["good number: 0"][0]+=num_goods_to_trade
             other_agent.goods["good number: 0"][0]-=num_goods_to_trade
 
@@ -107,8 +113,8 @@ class Agent:
             if self.goods["good number: 0"][0]-num_goods_to_trade <0 or other_agent.goods["good number: 1"][0]-compensation <0:
                 return False
 
-            print("smaller mrs")
-            print("compensation is",compensation)
+            #print("smaller mrs")
+            #print("compensation is",compensation)
 
             self.goods["good number: 0"][0]-=compensation
             other_agent.goods["good number: 0"][0]+=compensation
@@ -182,6 +188,8 @@ class Agent:
             return True
         return False
 
+    def get_location(self):
+        return (int(round(self.x)),int(round(self.y)))
 
     def draw(self):
         #the x and y cordinates are kept as floats, but to draw they need to be int
