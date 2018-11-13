@@ -1,8 +1,8 @@
 
 import pygame
 
-
-BLACK = (0,0,0)
+#import ColorDefinitions *
+from Thesis.ColorDefinitions import *
 
 class button:
 

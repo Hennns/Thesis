@@ -2,6 +2,8 @@ import string
 import pygame
 from pygame.locals import *
 
+#import ColorDefinitions *
+from Thesis.ColorDefinitions import *
 
 #https://github.com/Mekire/pygame-textbox
 #modified from above source
@@ -24,7 +26,7 @@ class TextBox():
 
         defaults = {
                     "active" : False,
-                    "color" : pygame.Color("white"),
+                    "color" : WHITE,
                     "font_color" : pygame.Color("black"),
                     "outline_color" : pygame.Color("black"),
                     "outline_width" : 2,
