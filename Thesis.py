@@ -1,11 +1,11 @@
 
 # In[1]:
+
+
 """TODO:
-colors in seperate file
 cobb duglas utility
 binning for collision detection
 """
-
 
 
 import pygame
@@ -17,8 +17,8 @@ from Thesis import Agent
 from Thesis import TextBox
 from Thesis import Button
 from Thesis.ColorDefinitions import *
-"""
 
+"""
 #Do this when running from command line
 import Agent
 import Button
@@ -48,8 +48,8 @@ BUTTON_Y = 20
 BUTTON_SPACE = 10
 
 
-BIN_NUM_ROWS=8
-BIN_NUM_COLLUMS=8
+BIN_NUM_ROWS=16
+BIN_NUM_COLLUMS=16
 
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
 
@@ -58,14 +58,18 @@ num_goods_to_trade=2
 
 
 #Create BOX map
-rows = [(WIDTH/BIN_NUM_ROWS)*x for x in range(BIN_NUM_ROWS)]
-collums = [(HEIGHT/BIN_NUM_COLLUMS)*x for x in range(BIN_NUM_COLLUMS)]
+
+BOX_WIDTH=int(round(WIDTH/BIN_NUM_ROWS))
+BOX_HEIGTH=int(round(HEIGHT/BIN_NUM_COLLUMS))
+
+rows = [BOX_WIDTH*x for x in range(BIN_NUM_ROWS)]
+collums = [BOX_HEIGTH*x for x in range(BIN_NUM_COLLUMS)]
 
 BOX_MAP = [[0 for x in range(BIN_NUM_COLLUMS)] for y in range(BIN_NUM_ROWS)]
 
 for r in range(BIN_NUM_ROWS):
     for c in range(BIN_NUM_COLLUMS):
-        BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],WIDTH/BIN_NUM_ROWS,HEIGHT/BIN_NUM_COLLUMS)
+        BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],BOX_WIDTH,BOX_HEIGTH)
 
 #each row+collum represents a box and contains a list of agents in that box
 box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
@@ -103,7 +107,7 @@ def graph_function(button):
     wait =True
     button.Display.fill(WHITE)
     pygame.draw.lines(button.Display, RED, False, utility_tracker, 1)
-    print(utility_tracker)
+    #print(utility_tracker)
     pygame.display.flip()
 
 
@@ -116,10 +120,15 @@ def get_box(agent):
             if BOX_MAP[row][col].collidepoint(x,y):
                 return (row,col)
     #This should never happen
-    print("BUGBUGBGBUGBG")
+    print("This should never happen")
     print("x is ",x)
     print("y is ",y)
-
+    print(BOX_MAP)
+    counter=0
+    for row in range(len(BOX_MAP)):
+        for col in range(len(BOX_MAP[row])):
+            counter+=1
+    print("number of boxes checked",counter)
 def get_nearby_agents(current_r,current_c):
     global box_tracker
     nearby_agents=[]
@@ -161,6 +170,9 @@ def find_new_box(agent):
     print("current box",r,c)
     print("x,y",x,y)
 
+    x,y =get_box(agent)
+    print("the box should be",x,y)
+
     print("could not find box")
 # In[5]:
 
@@ -175,11 +187,14 @@ def move_agents():
         for other_agent in get_nearby_agents(r,c):
             if agent.collision(other_agent):
                 agent.bounce(other_agent)
+
                 if random.getrandbits(1):
                     other_agent.trade(agent,num_goods_to_trade)
                 else:
                     agent.trade(other_agent,num_goods_to_trade)
                 #print_total_utility()
+                #agent.update_color()
+                #other_agent.update_color()
                 break
         find_new_box(agent)
 
