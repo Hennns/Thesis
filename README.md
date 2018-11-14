@@ -15,7 +15,7 @@ Cyan means more of good 1
 
 Blue means more of good 0
 
-Green blinks means agents sucsessfully traded
+Green blinks means agents successfully traded
 
 Red means a trade was impossible
 
