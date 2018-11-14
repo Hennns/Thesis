@@ -2,6 +2,7 @@ Controls:
 
 Enter number of agents to add in the box, hit return to create them
 spacebar creates one agent
+
 click start to begin (can also press g)
 click pause to stop (can also press p)
 
