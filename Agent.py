@@ -206,7 +206,7 @@ class Agent:
     def draw(self):
         x,y=self.get_location()
         if self.is_selected:
-            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y]), RADIUS+SELECTED_WIDTH)
+            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y), RADIUS+SELECTED_WIDTH)
         pygame.draw.circle(self.display, self.color, (x,y), RADIUS)
 
 
