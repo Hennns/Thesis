@@ -37,9 +37,10 @@ utility_tracker = []
 initial_utility = 1
 
 # In[2]:
-WIDTH= 600
-HEIGHT =600
+WIDTH= 1200
+HEIGHT =800
 TITLE="Title"
+INFO_WIDTH=400
 
 BUTTON_WIDTH = 100
 BUTTON_HEIGHT = 60
@@ -47,11 +48,15 @@ BUTTON_X = 20
 BUTTON_Y = 20
 BUTTON_SPACE = 10
 
-
+#Set number of bins (used to do collison calculations faster)
 BIN_NUM_ROWS=16
 BIN_NUM_COLLUMS=16
 
+#Border of agents
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
+BOTTOM_BORDER =HEIGHT
+RIGTH_BORDER =WIDTH-INFO_WIDTH
+LEFT_BORDER=0
 
 num_goods_to_trade=2
 
@@ -124,11 +129,8 @@ def get_box(agent):
     print("x is ",x)
     print("y is ",y)
     print(BOX_MAP)
-    counter=0
-    for row in range(len(BOX_MAP)):
-        for col in range(len(BOX_MAP[row])):
-            counter+=1
-    print("number of boxes checked",counter)
+
+
 def get_nearby_agents(current_r,current_c):
     global box_tracker
     nearby_agents=[]
@@ -218,7 +220,9 @@ def text_objects(text, font):
 
 def new_agent(display):
     global initial_utility
-    agent=Agent.Agent(TOP_BORDER,display,len(agent_list))
+    region_width=RIGTH_BORDER-LEFT_BORDER
+    region_height=BOTTOM_BORDER-TOP_BORDER
+    agent=Agent.Agent((LEFT_BORDER,TOP_BORDER,region_width,region_height),display,len(agent_list))
 
     agent.box=get_box(agent)
 

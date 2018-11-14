@@ -9,7 +9,7 @@ from Thesis.ColorDefinitions import *
 
 SPEED=3
 NUM_GOODS=2
-RADIUS =5
+RADIUS =10
 
 INITIAL_MAX_NUM_GOODS=128
 INITIAL_MAX_PREFERENCE=16
@@ -41,13 +41,13 @@ class Agent:
             #preference should be between 0 and 1 maybe
 
     #Initialize variables
-    def __init__(self,y_adjustment,display,ID):
+    def __init__(self,region,display,ID):
         self.display = display
         self.display_width,self.display_heigth= display.get_size()
 
-        self.y_adjustment=y_adjustment
-        self.x =random.randrange(RADIUS,self.display_width-RADIUS)
-        self.y =random.randrange(RADIUS+self.y_adjustment,self.display_heigth-RADIUS)
+        self.region =pygame.Rect(region)
+        self.x =random.randrange(RADIUS+self.region.left,self.region.right-RADIUS)
+        self.y =random.randrange(RADIUS+self.region.top,self.region.bottom-RADIUS)
 
         angle = random.uniform(0,2*math.pi)
         self.change_x =math.cos(angle)*SPEED
@@ -163,7 +163,7 @@ class Agent:
         print(" agent",self.id," utility ",self.get_utility())
 
     def move(self):
-        #doesn't need to be update every time
+        #doesn't need to be update every time, maybe find a way to avoid that
         self.update_color()
 
         # Move the center
@@ -171,11 +171,11 @@ class Agent:
         self.y += self.change_y
 
         #Stay in bounds
-        if self.y > self.display_heigth - RADIUS or self.y < RADIUS+self.y_adjustment:
+        if self.y > self.region.bottom - RADIUS or self.y < RADIUS+self.region.top:
             self.change_y *= -1
             self.y+=self.change_y
 
-        elif self.x > self.display_width-RADIUS or self.x < RADIUS:
+        elif self.x > self.region.right-RADIUS or self.x < RADIUS+self.region.left:
             self.change_x *= -1
             self.x+=self.change_x
 
@@ -205,19 +205,12 @@ class Agent:
 
     def draw(self):
         x,y=self.get_location()
-        #the x and y cordinates are kept as floats, but to draw they need to be int
         if self.is_selected:
-            pygame.draw.circle(self.display, SELECTED_COLOR, [x,y], RADIUS+SELECTED_WIDTH)
-        try:
-            pygame.draw.circle(self.display, self.color, [x,y], RADIUS)
-        except TypeError:
+            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y), RADIUS+SELECTED_WIDTH)
+        pygame.draw.circle(self.display, self.color, (x,y), RADIUS)
 
-            print(self.color)
-            print((self.goods["good number: 0"][0]+self.goods["good number: 1"][0]))
-            print(self.goods["good number: 0"][0]/(self.goods["good number: 0"][0]+self.goods["good number: 1"][0]))
-            print("num of good 0",self.goods["good number: 0"][0])
 
     def remove_selected_circle(self):
         x,y=self.get_location()
-        pygame.draw.circle(self.display,WHITE, [x,y], RADIUS+SELECTED_WIDTH)
+        pygame.draw.circle(self.display,WHITE, (x,y), RADIUS+SELECTED_WIDTH)
         self.draw()
