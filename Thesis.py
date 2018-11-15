@@ -10,7 +10,11 @@ binning for collision detection
 
 import pygame
 import random
-import numpy as np
+from collections import deque
+
+#Make window appear centered
+import os
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 #Do this when running via atom
 from Thesis import Agent
@@ -33,8 +37,7 @@ import ColorDefinitions *
 #Global things
 wait = True
 agent_list = []
-utility_tracker = []
-initial_utility = 1
+
 
 # In[2]:
 WIDTH= 1200
@@ -60,7 +63,13 @@ LEFT_BORDER=0
 
 num_goods_to_trade=2
 
+#Documnetation for deque
+#https://docs.python.org/2/library/collections.html#collections.deque
 
+utility_tracker = []
+utility_grapher = deque(maxlen =INFO_WIDTH)
+utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
+initial_utility = 1
 
 #Create BOX map
 
@@ -87,9 +96,10 @@ def reset_function(button):
     global agent_list
     global utility_tracker
     global initial_utility
+    initial_utility=1
     agent_list =[]
     utility_tracker=[]
-    initial_utility=1
+    utility_grapher.clear()
     button.Display.fill(WHITE)
 
 
@@ -107,6 +117,7 @@ def step_function(button):
     draw_agents()
 
 
+#needs to be updated/do something different. no longer needed
 def graph_function(button):
     global wait
     wait =True
@@ -125,10 +136,7 @@ def get_box(agent):
             if BOX_MAP[row][col].collidepoint(x,y):
                 return (row,col)
     #This should never happen
-    print("This should never happen")
-    print("x is ",x)
-    print("y is ",y)
-    print(BOX_MAP)
+    print("box not found")
 
 
 def get_nearby_agents(current_r,current_c):
@@ -168,20 +176,16 @@ def find_new_box(agent):
             box_tracker[row][col].append(agent)
             agent.box=(row,col)
             return
-    print(get_nearby_boxes(r,c))
-    print("current box",r,c)
-    print("x,y",x,y)
-
-    x,y =get_box(agent)
-    print("the box should be",x,y)
-
-    print("could not find box")
+    #This should never happen
+    print("could not find new box")
 # In[5]:
 
 
 def move_agents():
     global box_tracker
-    box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
+    box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_ROWS)]
+    utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
+    utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
     for agent in agent_list:
         r,c = agent.box
 
@@ -195,12 +199,10 @@ def move_agents():
                 else:
                     agent.trade(other_agent,num_goods_to_trade)
                 #print_total_utility()
-                #agent.update_color()
-                #other_agent.update_color()
                 break
         find_new_box(agent)
 
-    utility_tracker.append((len(utility_tracker),HEIGHT-(get_utility()/initial_utility)*100))
+
 
 
 def get_utility():
@@ -263,6 +265,7 @@ def main():
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(graph_button)
+
 
     run =True
     while run:
@@ -333,7 +336,11 @@ def main():
             step_button.color=GREEN
             pause_button.color=RED
             pause_button.text="Pause"
-
+            #if len(utility_tracker)>1:
+                #pygame.draw.lines(Display, RED, False, utility_tracker, 1)
+            if len(utility_grapher)>1:
+                line=list(zip(utility_x_cordinates,list(utility_grapher)))
+                pygame.draw.lines(Display, RED, False,line, 1)
 
         #draw the buttons
         for b in button_list:
