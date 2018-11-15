@@ -10,6 +10,7 @@ binning for collision detection
 
 import pygame
 import random
+import numpy as np
 from collections import deque
 
 #Make window appear centered
@@ -80,32 +81,45 @@ BOX_HEIGTH=int(round(BOTTOM_BORDER/BIN_NUM_COLLUMS))
 box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
 
 
-def create_regions(width,heigth,rows,collums,x_space,y_space):
 
-    row_list = [width*x for x in range(rows)]
-    collum_list = [heigth*x for x in range(collums)]
+def divide_rect(rectangle,rows,collums,space):
+    height=rectangle.height/rows
+    width=rectangle.width/collums
 
+    r_list=[[0 for x in range(collums)] for y in range(rows)]
+    for row in range(rows):
+        print("row",row)
+        for c in range(collums):
+            r=rectangle.copy()
+            r.y+=int(row*height)
+            r.x+=int(c*width)
+            r.width=width-space
+            r.height=height-space
+            r_list[row][c]=r
+    return r_list
+
+
+def create_box_map(x_start,y_start,width,heigth,rows,collums):
+    row_list = [x_start+width*x for x in range(rows)]
+    collum_list = [y_start+heigth*x for x in range(collums)]
     regions = [[0 for x in range(collums)] for y in range(rows)]
-
     for r in range(rows):
         for c in range(collums):
-            regions[r][c]=pygame.Rect(row_list[r],collum_list[c],width-x_space,heigth-y_space)
+            regions[r][c]=pygame.Rect(row_list[r],collum_list[c],width,heigth)
     return regions
 
-"""
-rows = [BOX_WIDTH*x for x in range(BIN_NUM_ROWS)]
-collums = [BOX_HEIGTH*x for x in range(BIN_NUM_COLLUMS)]
 
-BOX_MAP = [[0 for x in range(BIN_NUM_COLLUMS)] for y in range(BIN_NUM_ROWS)]
+BOX_MAP=create_box_map(LEFT_BORDER,TOP_BORDER,BOX_WIDTH,BOX_HEIGTH,BIN_NUM_ROWS,BIN_NUM_COLLUMS)
 
-for r in range(BIN_NUM_ROWS):
-    for c in range(BIN_NUM_COLLUMS):
-        BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],BOX_WIDTH,BOX_HEIGTH)
-"""
-BOX_MAP=create_regions(BOX_WIDTH,BOX_HEIGTH,BIN_NUM_ROWS,BIN_NUM_COLLUMS,0,0)
+print(BOX_MAP[0][0])
+print(BOX_MAP[1][0])
+print(BOX_MAP[0][1])
 
+BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMS,0)
 
-
+print(BOX_MAP[0][0])
+print(BOX_MAP[1][0])
+print(BOX_MAP[0][1])
 
 # In[3]:
 
@@ -297,17 +311,13 @@ def main():
 
 
     #Test agents in seperate regions
-    num=40
-    #https://stackoverflow.com/questions/10941229/convert-list-of-tuples-to-list
-    #from itertools import chain
-    #agent_regions = list(chain.from_iterable(create_regions(200,200,int(num/2),int(num/2),10,10)))
-
+    num=5
+    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),4,4,10)
     for i in range(num):
-        #agent_list.append(new_agent_in_region(Display, agent_regions[i]))
-        agent_list.append(new_agent_in_region(Display, pygame.Rect(0,100,300,300)))
+        for r in range(len(agent_regions)):
+            for c in range(len(agent_regions[r])):
+                agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
 
-    for i in range(num):
-        agent_list.append(new_agent_in_region(Display, pygame.Rect(310,410,300,300)))
 
     run =True
     while run:
@@ -368,11 +378,16 @@ def main():
                                     agent.remove_selected_circle()
                                     draw_agents()
                             break
+
+
+
         if wait:
             pause_button.color=GREEN
             pause_button.text="Start"
         else:
+
             Display.fill(WHITE)
+
             move_agents()
             draw_agents()
             step_button.color=GREEN
