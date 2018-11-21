@@ -1,8 +1,8 @@
 
 import pygame
 
-#import ColorDefinitions *
-from Thesis.ColorDefinitions import *
+from ColorDefinitions import *
+#from Thesis.ColorDefinitions import *
 
 #Make this into pygame rect?
 class button:

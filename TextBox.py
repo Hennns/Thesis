@@ -2,8 +2,8 @@ import string
 import pygame
 from pygame.locals import *
 
-#import ColorDefinitions *
-from Thesis.ColorDefinitions import *
+from ColorDefinitions import *
+#from Thesis.ColorDefinitions import *
 
 #https://github.com/Mekire/pygame-textbox
 #modified from above source
