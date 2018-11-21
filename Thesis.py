@@ -16,7 +16,7 @@ from collections import deque
 #Make window appear centered
 import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
-
+"""
 #Do this when running via atom
 from Thesis import Agent
 from Thesis import TextBox
@@ -28,8 +28,8 @@ from Thesis.ColorDefinitions import *
 import Agent
 import Button
 import TextBox
-import ColorDefinitions *
-"""
+from ColorDefinitions import *
+
 
 #Sources
 #http://usingpython.com/pygame-intro/
@@ -69,27 +69,15 @@ utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
 
-#Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS=16
-BIN_NUM_COLLUMS=16
 
-#Create boxes for agents only in the area they can move
-BOX_WIDTH=int(round(RIGTH_BORDER/BIN_NUM_ROWS))
-BOX_HEIGTH=int(round(BOTTOM_BORDER/BIN_NUM_COLLUMS))
-
-#each row+collum represents a box and contains a list of agents in that box
-box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
-
-
-
-def divide_rect(rectangle,rows,collums,space):
+def divide_rect(rectangle,rows,columns,space):
     height=rectangle.height/rows
-    width=rectangle.width/collums
+    width=rectangle.width/columns
 
-    r_list=[[0 for x in range(collums)] for y in range(rows)]
+    r_list=[[0 for x in range(columns)] for y in range(rows)]
     for row in range(rows):
         print("row",row)
-        for c in range(collums):
+        for c in range(columns):
             r=rectangle.copy()
             r.y+=int(row*height)
             r.x+=int(c*width)
@@ -98,28 +86,15 @@ def divide_rect(rectangle,rows,collums,space):
             r_list[row][c]=r
     return r_list
 
-
-def create_box_map(x_start,y_start,width,heigth,rows,collums):
-    row_list = [x_start+width*x for x in range(rows)]
-    collum_list = [y_start+heigth*x for x in range(collums)]
-    regions = [[0 for x in range(collums)] for y in range(rows)]
-    for r in range(rows):
-        for c in range(collums):
-            regions[r][c]=pygame.Rect(row_list[r],collum_list[c],width,heigth)
-    return regions
-
-
-BOX_MAP=create_box_map(LEFT_BORDER,TOP_BORDER,BOX_WIDTH,BOX_HEIGTH,BIN_NUM_ROWS,BIN_NUM_COLLUMS)
-
-print(BOX_MAP[0][0])
-print(BOX_MAP[1][0])
-print(BOX_MAP[0][1])
+#Set number of bins (used to do collison calculations faster)
+BIN_NUM_ROWS=16
+BIN_NUM_COLLUMS=16
 
 BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMS,0)
 
-print(BOX_MAP[0][0])
-print(BOX_MAP[1][0])
-print(BOX_MAP[0][1])
+#each row+collum represents a box and contains a list of agents in that box
+box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
+
 
 # In[3]:
 
@@ -311,8 +286,8 @@ def main():
 
 
     #Test agents in seperate regions
-    num=5
-    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),4,4,10)
+    num=100
+    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),2,2,20)
     for i in range(num):
         for r in range(len(agent_regions)):
             for c in range(len(agent_regions[r])):

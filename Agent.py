@@ -4,8 +4,8 @@ import random
 import math
 import pygame
 
-#import ColorDefinitions *
-from Thesis.ColorDefinitions import *
+from ColorDefinitions import *
+#from Thesis.ColorDefinitions import *
 
 SPEED=3
 NUM_GOODS=2
