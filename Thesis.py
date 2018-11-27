@@ -10,12 +10,13 @@ binning for collision detection
 
 import pygame
 import random
+import numpy as np
 from collections import deque
 
 #Make window appear centered
 import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
-
+"""
 #Do this when running via atom
 from Thesis import Agent
 from Thesis import TextBox
@@ -27,8 +28,8 @@ from Thesis.ColorDefinitions import *
 import Agent
 import Button
 import TextBox
-import ColorDefinitions *
-"""
+from ColorDefinitions import *
+
 
 #Sources
 #http://usingpython.com/pygame-intro/
@@ -51,10 +52,6 @@ BUTTON_X = 20
 BUTTON_Y = 20
 BUTTON_SPACE = 10
 
-#Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS=16
-BIN_NUM_COLLUMS=16
-
 #Border of agents
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
 BOTTOM_BORDER =HEIGHT
@@ -71,25 +68,36 @@ utility_grapher = deque(maxlen =INFO_WIDTH)
 utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
-#Create BOX map
 
-BOX_WIDTH=int(round(WIDTH/BIN_NUM_ROWS))
-BOX_HEIGTH=int(round(HEIGHT/BIN_NUM_COLLUMS))
 
-rows = [BOX_WIDTH*x for x in range(BIN_NUM_ROWS)]
-collums = [BOX_HEIGTH*x for x in range(BIN_NUM_COLLUMS)]
+def divide_rect(rectangle,rows,columns,space):
+    height=rectangle.height/rows
+    width=rectangle.width/columns
 
-BOX_MAP = [[0 for x in range(BIN_NUM_COLLUMS)] for y in range(BIN_NUM_ROWS)]
+    r_list=[[0 for x in range(columns)] for y in range(rows)]
+    for row in range(rows):
+        print("row",row)
+        for c in range(columns):
+            r=rectangle.copy()
+            r.y+=int(row*height)
+            r.x+=int(c*width)
+            r.width=width-space
+            r.height=height-space
+            r_list[row][c]=r
+    return r_list
 
-for r in range(BIN_NUM_ROWS):
-    for c in range(BIN_NUM_COLLUMS):
-        BOX_MAP[r][c]=pygame.Rect(rows[r],collums[c],BOX_WIDTH,BOX_HEIGTH)
+#Set number of bins (used to do collison calculations faster)
+BIN_NUM_ROWS=16
+BIN_NUM_COLLUMS=16
+
+BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMS,0)
 
 #each row+collum represents a box and contains a list of agents in that box
 box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
 
 
 # In[3]:
+
 
 
 def reset_function(button):
@@ -234,6 +242,15 @@ def new_agent(display):
     return agent
 
 
+def new_agent_in_region(Display,region):
+    global initial_utility
+    agent=Agent.Agent(region,Display,len(agent_list))
+    agent.box=get_box(agent)
+    agent.draw()
+    initial_utility+=agent.get_utility()
+
+    return agent
+
 
 def print_total_utility():
     global_utility=0
@@ -265,6 +282,16 @@ def main():
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(graph_button)
+
+
+
+    #Test agents in seperate regions
+    num=100
+    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),2,2,20)
+    for i in range(num):
+        for r in range(len(agent_regions)):
+            for c in range(len(agent_regions[r])):
+                agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
 
 
     run =True
@@ -326,11 +353,16 @@ def main():
                                     agent.remove_selected_circle()
                                     draw_agents()
                             break
+
+
+
         if wait:
             pause_button.color=GREEN
             pause_button.text="Start"
         else:
+
             Display.fill(WHITE)
+
             move_agents()
             draw_agents()
             step_button.color=GREEN
