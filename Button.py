@@ -24,7 +24,7 @@ class button:
 
         #empty string = false, if there is text then draw it
         if self.text:
-            #draw the text
+            #draw the text in the middle of the button
             textSurf, textRect = text_objects(self.text, self.font)
             textRect.center = ((self.x+(self.width/2)), (self.y+(self.heigth/2)) )
             self.Display.blit(textSurf, textRect)

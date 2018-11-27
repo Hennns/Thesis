@@ -27,10 +27,10 @@ class TextBox():
         defaults = {
                     "active" : False,
                     "color" : WHITE,
-                    "font_color" : pygame.Color("black"),
-                    "outline_color" : pygame.Color("black"),
+                    "font_color" : BLACK,
+                    "outline_color" : BLACK,
                     "outline_width" : 2,
-                    "active_color" : pygame.Color("blue"),
+                    "active_color" : BLUE,
                     "font" : pygame.font.Font("freesansbold.ttf",self.text_size),
                     }
 

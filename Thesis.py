@@ -4,7 +4,6 @@
 
 """TODO:
 cobb duglas utility
-binning for collision detection
 """
 
 
@@ -29,6 +28,7 @@ import Agent
 import Button
 import TextBox
 from ColorDefinitions import *
+
 
 
 #Sources
@@ -69,14 +69,13 @@ utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
 
-
+#split a pygame.Rect into many smaller pygame.Rect
 def divide_rect(rectangle,rows,columns,space):
     height=rectangle.height/rows
     width=rectangle.width/columns
 
     r_list=[[0 for x in range(columns)] for y in range(rows)]
     for row in range(rows):
-        print("row",row)
         for c in range(columns):
             r=rectangle.copy()
             r.y+=int(row*height)
@@ -96,13 +95,33 @@ BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,
 box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
 
 
+
+agent_settings = {
+                "radius" : 20,
+                "perfect_substitutes": True
+                }
+
+
+settings = {
+            "show_trade": False,
+            "num_rows": 1,
+            "num_collums": 1,
+            "random_num_goods": True
+            }
+
+
 # In[3]:
 
 
+def settings_function(button):
+    global wait
+    wait = True
+    button.Display.fill(WHITE)
 
 def reset_function(button):
     global agent_list
     global utility_tracker
+    global utility_grapher
     global initial_utility
     initial_utility=1
     agent_list =[]
@@ -118,17 +137,18 @@ def pause_function(button):
 
 def step_function(button):
     global wait
-    wait =True
+    wait = True
     button.color=LIME_GREEN
     button.Display.fill(WHITE)
     move_agents()
     draw_agents()
+    draw_utility_graph(button.Display)
 
 
 #needs to be updated/do something different. no longer needed
 def graph_function(button):
     global wait
-    wait =True
+    wait = True
     button.Display.fill(WHITE)
     pygame.draw.lines(button.Display, RED, False, utility_tracker, 1)
     #print(utility_tracker)
@@ -138,7 +158,7 @@ def graph_function(button):
 # In[4]:
 
 def get_box(agent):
-    x,y=agent.get_location()
+    x,y = agent.get_location()
     for row in range(len(BOX_MAP)):
         for col in range(len(BOX_MAP[row])):
             if BOX_MAP[row][col].collidepoint(x,y):
@@ -149,7 +169,7 @@ def get_box(agent):
 
 def get_nearby_agents(current_r,current_c):
     global box_tracker
-    nearby_agents=[]
+    nearby_agents = []
     for r in range(-1,2):
         for c in range(-1,2):
             try:
@@ -160,7 +180,7 @@ def get_nearby_agents(current_r,current_c):
     return nearby_agents
 
 def get_nearby_boxes(current_r,current_c):
-    nearby_boxes=[]
+    nearby_boxes = []
     for row in range(-1,2):
         if 0<= current_r-row <BIN_NUM_ROWS:
             for col in range(-1,2):
@@ -203,9 +223,9 @@ def move_agents():
                 agent.bounce(other_agent)
 
                 if random.getrandbits(1):
-                    other_agent.trade(agent,num_goods_to_trade)
+                    other_agent.trade(agent,num_goods_to_trade,settings["show_trade"])
                 else:
-                    agent.trade(other_agent,num_goods_to_trade)
+                    agent.trade(other_agent,num_goods_to_trade,settings["show_trade"])
                 #print_total_utility()
                 break
         find_new_box(agent)
@@ -223,28 +243,28 @@ def draw_agents():
     for agent in agent_list:
         agent.draw()
 
+def draw_utility_graph(Display):
+    if len(utility_grapher)>1:
+        line=list(zip(utility_x_cordinates,list(utility_grapher)))
+        pygame.draw.lines(Display, RED, False,line, 1)
 
 def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
-def new_agent(display):
-    global initial_utility
+def new_agent(Display):
+
     region_width=RIGTH_BORDER-LEFT_BORDER
     region_height=BOTTOM_BORDER-TOP_BORDER
-    agent=Agent.Agent((LEFT_BORDER,TOP_BORDER,region_width,region_height),display,len(agent_list))
+    region=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
 
-    agent.box=get_box(agent)
 
-    agent.draw()
-    initial_utility+=agent.get_utility()
-
-    return agent
+    return new_agent_in_region(Display,region)
 
 
 def new_agent_in_region(Display,region):
     global initial_utility
-    agent=Agent.Agent(region,Display,len(agent_list))
+    agent=Agent.Agent(region,Display,len(agent_list),agent_settings)
     agent.box=get_box(agent)
     agent.draw()
     initial_utility+=agent.get_utility()
@@ -276,18 +296,20 @@ def main():
     pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",smallText,Display,step_function)
     graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",smallText,Display,graph_function)
+    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",smallText,Display,settings_function)
 
     button_list=[]
     button_list.append(reset_button)
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(graph_button)
+    button_list.append(settings_button)
 
 
 
     #Test agents in seperate regions
     num=100
-    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),2,2,20)
+    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),4,2,20)
     for i in range(num):
         for r in range(len(agent_regions)):
             for c in range(len(agent_regions[r])):
@@ -368,11 +390,7 @@ def main():
             step_button.color=GREEN
             pause_button.color=RED
             pause_button.text="Pause"
-            #if len(utility_tracker)>1:
-                #pygame.draw.lines(Display, RED, False, utility_tracker, 1)
-            if len(utility_grapher)>1:
-                line=list(zip(utility_x_cordinates,list(utility_grapher)))
-                pygame.draw.lines(Display, RED, False,line, 1)
+            draw_utility_graph(Display)
 
         #draw the buttons
         for b in button_list:
