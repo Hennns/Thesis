@@ -25,6 +25,7 @@ class TextBox():
         self.blink_timer = 0.0
 
         defaults = {
+                    "name" : "text",
                     "active" : False,
                     "color" : WHITE,
                     "font_color" : BLACK,

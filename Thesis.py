@@ -37,7 +37,9 @@ from ColorDefinitions import *
 
 #Global things
 wait = True
+change_settings = False
 agent_list = []
+button_list = []
 
 
 # In[2]:
@@ -114,11 +116,25 @@ settings = {
 
 
 def settings_function(button):
-    global wait
-    wait = True
+    global change_settings
+    global button_list
+    change_settings = not change_settings
+    clear()
     button.Display.fill(WHITE)
 
+    button_list=[]
+    if change_settings:
+        button_list.append(button)
+        button.text = "Save"
+    else:
+        initalize_button_list(button.Display)
+
 def reset_function(button):
+    clear()
+    button.Display.fill(WHITE)
+
+
+def clear():
     global agent_list
     global utility_tracker
     global utility_grapher
@@ -127,8 +143,6 @@ def reset_function(button):
     agent_list =[]
     utility_tracker=[]
     utility_grapher.clear()
-    button.Display.fill(WHITE)
-
 
 def pause_function(button):
     global wait
@@ -278,27 +292,16 @@ def print_total_utility():
         global_utility+=agent.get_utility()
     print(global_utility)
 
+def initalize_button_list(Display):
+    global button_list
 
-def main():
-    global wait
-    pygame.init()
-    Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
-    #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
-    Display.fill(WHITE)
-    pygame.display.set_caption(TITLE)
-    clock = pygame.time.Clock()
+    small_text = pygame.font.Font("freesansbold.ttf",20)
+    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
+    pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
+    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
+    graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",small_text,Display,graph_function)
+    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
 
-    #Text Font
-    smallText = pygame.font.Font("freesansbold.ttf",20)
-    text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
-
-    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",smallText,Display,reset_function)
-    pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
-    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",smallText,Display,step_function)
-    graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",smallText,Display,graph_function)
-    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",smallText,Display,settings_function)
-
-    button_list=[]
     button_list.append(reset_button)
     button_list.append(pause_button)
     button_list.append(step_button)
@@ -306,6 +309,25 @@ def main():
     button_list.append(settings_button)
 
 
+def main():
+    global wait
+    global change_settings
+    pygame.init()
+    Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
+    #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
+    Display.fill(WHITE)
+    pygame.display.set_caption(TITLE)
+    clock = pygame.time.Clock()
+
+
+    text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_radius = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+100,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_radius.name="radius"
+
+    settings_list=[]
+    settings_list.append(set_radius)
+
+    initalize_button_list(Display)
 
     #Test agents in seperate regions
     num=100
@@ -349,14 +371,37 @@ def main():
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in text.ACCEPTED:
                         text.buffer.append(event.unicode)
+
+
+                elif settings:
+                    for input_box in settings_list:
+                        if input_box.active:
+                            if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                                agent_settings[input_box.name]=input_box.execute()
+                            #Delete last input
+                            elif event.key == pygame.K_BACKSPACE:
+                                if input_box.buffer:
+                                    input_box.buffer.pop()
+                            #only allow valid input this setting
+                            elif event.unicode in input_box.ACCEPTED:
+                                input_box.buffer.append(event.unicode)
+                            break
+
             #left mouse click
             elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
                 #get mouse position
                 mouse = pygame.mouse.get_pos()
 
                 text.active = text.rect.collidepoint(mouse)
+
                 #if the mouse is above the input box it is not above anything else
                 if not text.active:
+
+                    for setting_box in settings_list:
+                        setting_box.active=setting_box.rect.collidepoint(mouse)
+                        if setting_box.active:
+                            break
+
                     #check if the mouse is above a button, if it is execute that button
                     for b in button_list:
                         r = pygame.Rect(b.getRect())
@@ -376,28 +421,34 @@ def main():
                                     draw_agents()
                             break
 
-
-
-        if wait:
-            pause_button.color=GREEN
-            pause_button.text="Start"
+        if change_settings:
+            for setting in settings_list:
+                setting.update()
+                setting.draw(Display)
         else:
-
-            Display.fill(WHITE)
-
-            move_agents()
-            draw_agents()
-            step_button.color=GREEN
-            pause_button.color=RED
-            pause_button.text="Pause"
-            draw_utility_graph(Display)
+            if wait:
+                button_list[1].color=GREEN
+                button_list[1].text="Start"
+                #pause_button.color=GREEN
+                #pause_button.text="Start"
+            else:
+                Display.fill(WHITE)
+                move_agents()
+                draw_agents()
+                #step_button.color=GREEN
+                #pause_button.color=RED
+                #pause_button.text="Pause"
+                button_list[1].color=RED
+                button_list[1].text="Pause"
+                button_list[2].color=GREEN
+                draw_utility_graph(Display)
+            #draw the input box
+            text.update()
+            text.draw(Display)
 
         #draw the buttons
         for b in button_list:
             b.draw_button()
-        #draw the input box
-        text.update()
-        text.draw(Display)
 
 
 
