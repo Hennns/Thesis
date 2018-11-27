@@ -321,7 +321,7 @@ def main():
 
 
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_radius = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+100,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_radius = TextBox.TextBox((BUTTON_X+BUTTON_WIDTH,BUTTON_Y*2+BUTTON_SPACE,BUTTON_WIDTH,BUTTON_HEIGHT))
     set_radius.name="radius"
 
     settings_list=[]
@@ -377,6 +377,8 @@ def main():
                     for input_box in settings_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                                #Setting radius too large makes collision detection fail
+                                #Probably bc the agents get's bigger than the bins they fall into
                                 agent_settings[input_box.name]=input_box.execute()
                             #Delete last input
                             elif event.key == pygame.K_BACKSPACE:
@@ -422,9 +424,13 @@ def main():
                             break
 
         if change_settings:
-            for setting in settings_list:
-                setting.update()
-                setting.draw(Display)
+            for input_box in settings_list:
+                input_box.update()
+                input_box.draw(Display)
+
+                textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
+                textRect.center = (input_box.rect.centerx-input_box.rect.width, input_box.rect.centery)
+                Display.blit(textSurf, textRect)
         else:
             if wait:
                 button_list[1].color=GREEN
@@ -450,7 +456,9 @@ def main():
         for b in button_list:
             b.draw_button()
 
-
+    #    font = pygame.font.Font(None, 30)
+    #    fps = font.render(str(int(clock.get_fps())), True, BLACK)
+    #    Display.blit(fps, (700, 50))
 
         #60 Frames per second
         clock.tick(60)

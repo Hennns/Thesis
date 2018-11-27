@@ -48,7 +48,7 @@ class Agent:
         self.id = ID
 
         self.color = BLUE
-        self.radius =10
+        #self.radius =10
         self.is_selected = False
         self.goods = {}
         self.box = (0,0)
