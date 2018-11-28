@@ -45,6 +45,12 @@ class TextBox():
         self.buffer = []
         return input
 
+    def get_input_as_int(self):
+        if not self.buffer:
+            return ""
+        input = int("".join(self.buffer))
+        return input
+
     def update(self):
         new = "".join(self.buffer)
         if new != self.final:

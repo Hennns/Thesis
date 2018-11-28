@@ -40,6 +40,7 @@ wait = True
 change_settings = False
 agent_list = []
 button_list = []
+setting_box_list=[]
 
 
 # In[2]:
@@ -99,7 +100,7 @@ box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
 
 
 agent_settings = {
-                "radius" : 20,
+                "radius" : 10,
                 "perfect_substitutes": True
                 }
 
@@ -118,31 +119,45 @@ settings = {
 def settings_function(button):
     global change_settings
     global button_list
+    #global setting_box_list
     change_settings = not change_settings
-    clear()
     button.Display.fill(WHITE)
 
     button_list=[]
     if change_settings:
-        button_list.append(button)
         button.text = "Save"
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
+        button_list.append(button)
+        button_list.append(return_button)
+
     else:
+        clear()
         initalize_button_list(button.Display)
+        for input_box in setting_box_list:
+            agent_settings[input_box.name]=input_box.get_input_as_int()
+        print("settings updated")
 
 def reset_function(button):
     clear()
     button.Display.fill(WHITE)
 
+def return_function(button):
+    global change_settings
+    global button_list
+    change_settings = False
+    button_list=[]
+    initalize_button_list(button.Display)
+    button.Display.fill(WHITE)
+    draw_agents()
+    draw_utility_graph(button.Display)
 
-def clear():
-    global agent_list
-    global utility_tracker
-    global utility_grapher
-    global initial_utility
-    initial_utility=1
-    agent_list =[]
-    utility_tracker=[]
-    utility_grapher.clear()
+    for box in setting_box_list:
+        try:
+            box.buffer = [str(i) for i in str(agent_settings[box.name])]
+        except KeyError:
+            print("no key for setting_box")
+            continue
+
 
 def pause_function(button):
     global wait
@@ -168,6 +183,17 @@ def graph_function(button):
     #print(utility_tracker)
     pygame.display.flip()
 
+
+
+def clear():
+    global agent_list
+    global utility_tracker
+    global utility_grapher
+    global initial_utility
+    initial_utility=1
+    agent_list =[]
+    utility_tracker=[]
+    utility_grapher.clear()
 
 # In[4]:
 
@@ -279,17 +305,17 @@ def new_agent(Display):
 def new_agent_in_region(Display,region):
     global initial_utility
     agent=Agent.Agent(region,Display,len(agent_list),agent_settings)
-    agent.box=get_box(agent)
+    agent.box = get_box(agent)
     agent.draw()
-    initial_utility+=agent.get_utility()
+    initial_utility += agent.get_utility()
 
     return agent
 
 
 def print_total_utility():
-    global_utility=0
+    global_utility = 0
     for agent in agent_list:
-        global_utility+=agent.get_utility()
+        global_utility += agent.get_utility()
     print(global_utility)
 
 def initalize_button_list(Display):
@@ -297,7 +323,7 @@ def initalize_button_list(Display):
 
     small_text = pygame.font.Font("freesansbold.ttf",20)
     reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
-    pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
+    pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
     graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",small_text,Display,graph_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
@@ -308,10 +334,21 @@ def initalize_button_list(Display):
     button_list.append(graph_button)
     button_list.append(settings_button)
 
+def create_setting_box(name,rect):
+    box = TextBox.TextBox(rect)
+    box.name = name
+    try:
+        box.buffer = [str(i) for i in str(agent_settings[box.name])]
+    except KeyError:
+        print("no key for setting_box")
+        pass
+
+    return box
 
 def main():
     global wait
     global change_settings
+    global setting_box_list
     pygame.init()
     Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
     #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
@@ -321,11 +358,11 @@ def main():
 
 
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_radius = TextBox.TextBox((BUTTON_X+BUTTON_WIDTH,BUTTON_Y*2+BUTTON_SPACE,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_radius.name="radius"
+    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    setting_two = create_setting_box("test",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    settings_list=[]
-    settings_list.append(set_radius)
+    setting_box_list.append(set_radius)
+    setting_box_list.append(setting_two)
 
     initalize_button_list(Display)
 
@@ -374,14 +411,15 @@ def main():
 
 
                 elif settings:
-                    for input_box in settings_list:
+                    for input_box in setting_box_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                                pass
                                 #Setting radius too large makes collision detection fail
                                 #Probably bc the agents get's bigger than the bins they fall into
-                                agent_settings[input_box.name]=input_box.execute()
+                                #agent_settings[input_box.name]=input_box.get_input_as_int()
                             #Delete last input
-                            elif event.key == pygame.K_BACKSPACE:
+                            if event.key == pygame.K_BACKSPACE:
                                 if input_box.buffer:
                                     input_box.buffer.pop()
                             #only allow valid input this setting
@@ -399,7 +437,7 @@ def main():
                 #if the mouse is above the input box it is not above anything else
                 if not text.active:
 
-                    for setting_box in settings_list:
+                    for setting_box in setting_box_list:
                         setting_box.active=setting_box.rect.collidepoint(mouse)
                         if setting_box.active:
                             break
@@ -424,7 +462,7 @@ def main():
                             break
 
         if change_settings:
-            for input_box in settings_list:
+            for input_box in setting_box_list:
                 input_box.update()
                 input_box.draw(Display)
 
