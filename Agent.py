@@ -42,19 +42,19 @@ class Agent:
 
 
     #Initialize variables
-    def __init__(self,region,display,ID,settings):
+    def __init__(self,region,display,ID,radius):
         self.display = display
         self.region = pygame.Rect(region)
         self.id = ID
 
         self.color = BLUE
-        #self.radius =10
+        self.radius =radius
         self.is_selected = False
         self.goods = {}
         self.box = (0,0)
 
 
-        self.__dict__.update(settings)
+        #self.__dict__.update(settings)
 
         self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
         self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
