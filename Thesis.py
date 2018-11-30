@@ -4,7 +4,6 @@
 
 """TODO:
 cobb duglas utility
-binning for collision detection
 """
 
 
@@ -31,13 +30,20 @@ import TextBox
 from ColorDefinitions import *
 
 
+
 #Sources
 #http://usingpython.com/pygame-intro/
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-wait = True
 agent_list = []
+button_list = []
+setting_box_list=[]
+wait = True
+change_settings = False
+
+#move region_mode into settings?
+region_mode = True
 
 
 # In[2]:
@@ -69,14 +75,13 @@ utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
 
-
+#split a pygame.Rect into many smaller pygame.Rect
 def divide_rect(rectangle,rows,columns,space):
     height=rectangle.height/rows
     width=rectangle.width/columns
 
     r_list=[[0 for x in range(columns)] for y in range(rows)]
     for row in range(rows):
-        print("row",row)
         for c in range(columns):
             r=rectangle.copy()
             r.y+=int(row*height)
@@ -88,27 +93,71 @@ def divide_rect(rectangle,rows,columns,space):
 
 #Set number of bins (used to do collison calculations faster)
 BIN_NUM_ROWS=16
-BIN_NUM_COLLUMS=16
+BIN_NUM_COLLUMNS=16
 
-BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMS,0)
+BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMNS,0)
 
 #each row+collum represents a box and contains a list of agents in that box
-box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_COLLUMS)]
+box_tracker= [([[]] * BIN_NUM_COLLUMNS) for row in range(BIN_NUM_COLLUMNS)]
+
+
+settings = {
+            "radius" : 10,
+            "perfect_substitutes": True,
+            "show trade": 0, #aka False
+            "rows": 1,
+            "collumns": 1,
+            "space": 20,
+            "random_num_goods": True
+            }
 
 
 # In[3]:
 
 
+def settings_function(button):
+    global change_settings
+    global button_list
+    #global setting_box_list
+    change_settings = not change_settings
+    button.Display.fill(WHITE)
+
+    button_list=[]
+    if change_settings:
+        button.text = "Save"
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
+        button_list.append(button)
+        button_list.append(return_button)
+
+    else:
+        #clear()
+        draw_agents()
+
+        initalize_button_list(button.Display)
+        for input_box in setting_box_list:
+            settings[input_box.name]=input_box.get_input_as_int()
+
 
 def reset_function(button):
-    global agent_list
-    global utility_tracker
-    global initial_utility
-    initial_utility=1
-    agent_list =[]
-    utility_tracker=[]
-    utility_grapher.clear()
+    clear()
     button.Display.fill(WHITE)
+
+def return_function(button):
+    global change_settings
+    global button_list
+    change_settings = False
+    button_list=[]
+    initalize_button_list(button.Display)
+    button.Display.fill(WHITE)
+    draw_agents()
+    draw_utility_graph(button.Display)
+
+    for box in setting_box_list:
+        try:
+            box.buffer = [str(i) for i in str(settings[box.name])]
+        except KeyError:
+            print("no key for setting_box")
+            continue
 
 
 def pause_function(button):
@@ -118,27 +167,51 @@ def pause_function(button):
 
 def step_function(button):
     global wait
-    wait =True
+    wait = True
     button.color=LIME_GREEN
     button.Display.fill(WHITE)
     move_agents()
     draw_agents()
+    draw_utility_graph(button.Display)
 
 
-#needs to be updated/do something different. no longer needed
-def graph_function(button):
-    global wait
-    wait =True
-    button.Display.fill(WHITE)
-    pygame.draw.lines(button.Display, RED, False, utility_tracker, 1)
-    #print(utility_tracker)
-    pygame.display.flip()
 
+def region_function(button):
+    global  region_mode
+    global agent_list
+    region_mode = not region_mode
+
+    if region_mode:
+        button.text = "region on"
+        button.color = GREEN
+        pass
+    else:
+        button.text = "region off"
+        button.color = RED
+
+        #THIS SHOULD BE GLOBAL CONSTANT MAYBE
+        region_width=RIGTH_BORDER-LEFT_BORDER
+        region_height=BOTTOM_BORDER-TOP_BORDER
+        region=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
+
+        for agent in agent_list:
+            agent.region = pygame.Rect(region)
+
+
+def clear():
+    global agent_list
+    global utility_tracker
+    global utility_grapher
+    global initial_utility
+    initial_utility=1
+    agent_list =[]
+    utility_tracker=[]
+    utility_grapher.clear()
 
 # In[4]:
 
 def get_box(agent):
-    x,y=agent.get_location()
+    x,y = agent.get_location()
     for row in range(len(BOX_MAP)):
         for col in range(len(BOX_MAP[row])):
             if BOX_MAP[row][col].collidepoint(x,y):
@@ -149,7 +222,7 @@ def get_box(agent):
 
 def get_nearby_agents(current_r,current_c):
     global box_tracker
-    nearby_agents=[]
+    nearby_agents = []
     for r in range(-1,2):
         for c in range(-1,2):
             try:
@@ -160,11 +233,11 @@ def get_nearby_agents(current_r,current_c):
     return nearby_agents
 
 def get_nearby_boxes(current_r,current_c):
-    nearby_boxes=[]
+    nearby_boxes = []
     for row in range(-1,2):
         if 0<= current_r-row <BIN_NUM_ROWS:
             for col in range(-1,2):
-                if 0<=current_c-col <BIN_NUM_COLLUMS and not row==col==0:
+                if 0<=current_c-col <BIN_NUM_COLLUMNS and not row==col==0:
                     nearby_boxes.append((current_r-row,current_c-col))
     return nearby_boxes
 
@@ -191,7 +264,7 @@ def find_new_box(agent):
 
 def move_agents():
     global box_tracker
-    box_tracker= [([[]] * BIN_NUM_COLLUMS) for row in range(BIN_NUM_ROWS)]
+    box_tracker= [([[]] * BIN_NUM_COLLUMNS) for row in range(BIN_NUM_ROWS)]
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
     for agent in agent_list:
@@ -203,9 +276,9 @@ def move_agents():
                 agent.bounce(other_agent)
 
                 if random.getrandbits(1):
-                    other_agent.trade(agent,num_goods_to_trade)
+                    other_agent.trade(agent,num_goods_to_trade,settings["show trade"])
                 else:
-                    agent.trade(other_agent,num_goods_to_trade)
+                    agent.trade(other_agent,num_goods_to_trade,settings["show trade"])
                 #print_total_utility()
                 break
         find_new_box(agent)
@@ -223,44 +296,75 @@ def draw_agents():
     for agent in agent_list:
         agent.draw()
 
+def draw_utility_graph(Display):
+    if len(utility_grapher)>1:
+        line=list(zip(utility_x_cordinates,list(utility_grapher)))
+        pygame.draw.lines(Display, RED, False,line, 1)
 
 def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
-def new_agent(display):
-    global initial_utility
+def new_agent(Display):
     region_width=RIGTH_BORDER-LEFT_BORDER
     region_height=BOTTOM_BORDER-TOP_BORDER
-    agent=Agent.Agent((LEFT_BORDER,TOP_BORDER,region_width,region_height),display,len(agent_list))
+    #MAKE GLOBAL CONSTANT
+    region=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
 
-    agent.box=get_box(agent)
-
-    agent.draw()
-    initial_utility+=agent.get_utility()
-
-    return agent
+    return new_agent_in_region(Display,region)
 
 
 def new_agent_in_region(Display,region):
     global initial_utility
-    agent=Agent.Agent(region,Display,len(agent_list))
-    agent.box=get_box(agent)
+
+    agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
+    agent.box = get_box(agent)
     agent.draw()
-    initial_utility+=agent.get_utility()
+    initial_utility += agent.get_utility()
 
     return agent
 
 
 def print_total_utility():
-    global_utility=0
+    global_utility = 0
     for agent in agent_list:
-        global_utility+=agent.get_utility()
+        global_utility += agent.get_utility()
     print(global_utility)
 
 
+#make a create button function
+def initalize_button_list(Display):
+    global button_list
+
+    small_text = pygame.font.Font("freesansbold.ttf",20)
+    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
+    pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
+    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
+    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"region on",small_text,Display,region_function)
+    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
+
+    button_list.append(reset_button)
+    button_list.append(pause_button)
+    button_list.append(step_button)
+    button_list.append(region_button)
+    button_list.append(settings_button)
+
+def create_setting_box(name,rect):
+    box = TextBox.TextBox(rect)
+    box.name = name
+    try:
+        box.buffer = [str(i) for i in str(settings[box.name])]
+    except KeyError:
+        print("no key for setting_box")
+        pass
+
+    return box
+
 def main():
     global wait
+    global change_settings
+    global setting_box_list
+    global region_mode
     pygame.init()
     Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
     #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
@@ -268,58 +372,69 @@ def main():
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
 
-    #Text Font
-    smallText = pygame.font.Font("freesansbold.ttf",20)
+
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",smallText,Display,reset_function)
-    pause_button =Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",smallText,Display,pause_function)
-    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",smallText,Display,step_function)
-    graph_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Graph",smallText,Display,graph_function)
+    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_collumns = create_setting_box("collumns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    button_list=[]
-    button_list.append(reset_button)
-    button_list.append(pause_button)
-    button_list.append(step_button)
-    button_list.append(graph_button)
+    setting_box_list.append(set_radius)
+    setting_box_list.append(set_collumns)
+    setting_box_list.append(set_rows)
+    setting_box_list.append(set_trade)
 
+    initalize_button_list(Display)
 
 
     #Test agents in seperate regions
     num=100
-    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),2,2,20)
+    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),4,2,20)
     for i in range(num):
         for r in range(len(agent_regions)):
             for c in range(len(agent_regions[r])):
-                agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
-
+                #agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
+                pass
 
     run =True
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run=False
-
+            #https://www.pygame.org/docs/ref/key.html
             elif event.type == pygame.KEYDOWN:
-                if wait:
-                    #https://www.pygame.org/docs/ref/key.html
-                    #press g to unpause
-                    if event.key == pygame.K_g:
-                        wait=False
 
                 #Make new agents by pressing space
                 if event.key == pygame.K_SPACE:
                     agent_list.append(new_agent(Display))
 
-                #pres p to pause
+                #pres p to pause/unpause
                 elif event.key == pygame.K_p:
-                    wait=True
+                    wait=not wait
 
                 #check if input box is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        for i in range(text.execute()):
-                            agent_list.append(new_agent(Display))
+                        #PUT IN FUNCTION
+                        if region_mode:
+                            r=settings["rows"]
+                            c=settings["collumns"]
+                            s=settings["space"]
+                            rad = settings["radius"]
+                            #MAKE RECT GLOBAL CONSTANT
+                            agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),r,c,s)
+                            for i in range(text.execute()):
+                                for r in range(len(agent_regions)):
+                                    for c in range(len(agent_regions[r])):
+                                        agent = Agent.Agent(agent_regions[r][c],Display,len(agent_list),rad)
+                                        agent.box = get_box(agent)
+                                        agent.draw()
+                                        #initial_utility += agent.get_utility()
+                                        agent_list.append(agent)
+                        else:
+                            for i in range(text.execute()):
+                                agent_list.append(new_agent(Display))
                     #Delete last input
                     elif event.key == pygame.K_BACKSPACE:
                         if text.buffer:
@@ -327,21 +442,44 @@ def main():
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in text.ACCEPTED:
                         text.buffer.append(event.unicode)
+
+
+                elif change_settings:
+                    for input_box in setting_box_list:
+                        if input_box.active:
+                            if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                                pass
+                                #Setting radius too large makes collision detection fail
+                                #Probably bc the agents get's bigger than the bins they fall into
+                                #Delete last input
+                            if event.key == pygame.K_BACKSPACE:
+                                if input_box.buffer:
+                                    input_box.buffer.pop()
+                            #only allow valid input this setting
+                            elif event.unicode in input_box.ACCEPTED:
+                                input_box.buffer.append(event.unicode)
+                            break
+
             #left mouse click
             elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
                 #get mouse position
                 mouse = pygame.mouse.get_pos()
-
                 text.active = text.rect.collidepoint(mouse)
-                #if the mouse is above the input box it is not above anything else
-                if not text.active:
-                    #check if the mouse is above a button, if it is execute that button
-                    for b in button_list:
-                        r = pygame.Rect(b.getRect())
-                        if r.collidepoint(mouse):
-                            b.execute()
-                            break
 
+                #check if the mouse is above a button, if it is execute that button
+                for b in button_list:
+                    r = pygame.Rect(b.getRect())
+                    if r.collidepoint(mouse):
+                        b.execute()
+                        break
+
+                #if chaninging settings, update if a setting box is active
+                if change_settings:
+                        for setting_box in setting_box_list:
+                            setting_box.active=setting_box.rect.collidepoint(mouse)
+
+                #if the mouse is above the input box it is not above anything else
+                elif not text.active:
                     #check if the mouse is above an agent
                     for agent in agent_list:
                         if agent.is_point_over_agent(mouse):
@@ -354,34 +492,43 @@ def main():
                                     draw_agents()
                             break
 
+        if change_settings:
+            for input_box in setting_box_list:
+                input_box.update()
+                input_box.draw(Display)
 
-
-        if wait:
-            pause_button.color=GREEN
-            pause_button.text="Start"
+                textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
+                textRect.midright = input_box.rect.midleft
+                textRect.x -= 5
+                Display.blit(textSurf, textRect)
         else:
-
-            Display.fill(WHITE)
-
-            move_agents()
-            draw_agents()
-            step_button.color=GREEN
-            pause_button.color=RED
-            pause_button.text="Pause"
-            #if len(utility_tracker)>1:
-                #pygame.draw.lines(Display, RED, False, utility_tracker, 1)
-            if len(utility_grapher)>1:
-                line=list(zip(utility_x_cordinates,list(utility_grapher)))
-                pygame.draw.lines(Display, RED, False,line, 1)
+            if wait:
+                button_list[1].color=GREEN
+                button_list[1].text="Start"
+                #pause_button.color=GREEN
+                #pause_button.text="Start"
+            else:
+                Display.fill(WHITE)
+                move_agents()
+                draw_agents()
+                #step_button.color=GREEN
+                #pause_button.color=RED
+                #pause_button.text="Pause"
+                button_list[1].color=RED
+                button_list[1].text="Pause"
+                button_list[2].color=GREEN
+                draw_utility_graph(Display)
+            #draw the input box
+            text.update()
+            text.draw(Display)
 
         #draw the buttons
         for b in button_list:
             b.draw_button()
-        #draw the input box
-        text.update()
-        text.draw(Display)
 
-
+    #    font = pygame.font.Font(None, 30)
+    #    fps = font.render(str(int(clock.get_fps())), True, BLACK)
+    #    Display.blit(fps, (700, 50))
 
         #60 Frames per second
         clock.tick(60)

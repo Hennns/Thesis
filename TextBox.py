@@ -25,12 +25,13 @@ class TextBox():
         self.blink_timer = 0.0
 
         defaults = {
+                    "name" : "text",
                     "active" : False,
                     "color" : WHITE,
-                    "font_color" : pygame.Color("black"),
-                    "outline_color" : pygame.Color("black"),
+                    "font_color" : BLACK,
+                    "outline_color" : BLACK,
                     "outline_width" : 2,
-                    "active_color" : pygame.Color("blue"),
+                    "active_color" : BLUE,
                     "font" : pygame.font.Font("freesansbold.ttf",self.text_size),
                     }
 
@@ -42,6 +43,12 @@ class TextBox():
             return 0
         input = int("".join(self.buffer))
         self.buffer = []
+        return input
+
+    def get_input_as_int(self):
+        if not self.buffer:
+            return ""
+        input = int("".join(self.buffer))
         return input
 
     def update(self):

@@ -9,7 +9,7 @@ from ColorDefinitions import *
 
 SPEED=3
 NUM_GOODS=2
-RADIUS =10
+
 
 INITIAL_MAX_NUM_GOODS=128
 INITIAL_MAX_PREFERENCE=16
@@ -19,7 +19,7 @@ INITIAL_MIN_PREFERENCE=2
 
 
 SELECTED_WIDTH=2
-SELECTED_COLOR=DARK_YELLOW
+SELECTED_COLOR=YELLOW
 
 #change color as endowments change
 class Agent:
@@ -31,6 +31,7 @@ class Agent:
         b=255
         self.color=(r,g,b)
 
+
     def create_goods(self):
         #name of good, amount of good and preference of good
         for i in range(NUM_GOODS):
@@ -38,40 +39,41 @@ class Agent:
             random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2,
             random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
             ]
-            #preference should be between 0 and 1 maybe
+
 
     #Initialize variables
-    def __init__(self,region,display,ID):
+    def __init__(self,region,display,ID,radius):
         self.display = display
-        self.display_width,self.display_heigth= display.get_size()
-
-        self.region =pygame.Rect(region)
-        self.x =random.randrange(RADIUS+self.region.left,self.region.right-RADIUS)
-        self.y =random.randrange(RADIUS+self.region.top,self.region.bottom-RADIUS)
-
-        angle = random.uniform(0,2*math.pi)
-        self.change_x =math.cos(angle)*SPEED
-        self.change_y =math.sin(angle)*SPEED
+        self.region = pygame.Rect(region)
+        self.id = ID
 
         self.color = BLUE
-        self.is_selected=False
-        self.id=ID
-        self.goods={}
+        self.radius =radius
+        self.is_selected = False
+        self.goods = {}
+        self.box = (0,0)
 
-        self.box=(0,0)
+
+        #self.__dict__.update(settings)
+
+        self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
+        self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
+        self.on_edge_x = False
+        self.on_edge_y = False
+
+        angle = random.uniform(0,2*math.pi)
+        self.change_x = math.cos(angle)*SPEED
+        self.change_y = math.sin(angle)*SPEED
+
 
         self.create_goods()
         self.update_color()
 
     def bounce(self,other_agent):
         #calculate how to bounce the agents
-        #TODO sqrt is bad, get rid of it (or maybe not that bad)
         distance = self.x-other_agent.x, self.y-other_agent.y
         norm=math.sqrt(distance[0]**2+distance[1]**2)
-        #Fast inverse sqrt
-
-        #Float division by Zero error (two agents spawn on top of each other?)
-        #Agent bounce on itself?
+        #possibility for fast inverse sqrt
 
         direction=distance[0]/norm,distance[1]/norm
 
@@ -79,26 +81,37 @@ class Agent:
         self.change_x=direction[0]*SPEED
         self.change_y=direction[1]*SPEED
 
-        other_agent.change_x=self.change_x*-1
-        other_agent.change_y=self.change_y*-1
+
+        other_agent.change_x=-self.change_x
+        other_agent.change_y=-self.change_y
+
+        self.move_away_from_edge()
+        other_agent.move_away_from_edge()
 
 
+    def move_away_from_edge(self):
+        if self.on_edge_x:
+            self.change_x = -self.change_x
 
-    def trade(self,other_agent,num_goods_to_trade):
+        if self.on_edge_y:
+            self.change_y = -self.change_y
+
+
+    def trade(self,other_agent,num_goods_to_trade,show_trade):
         #print()
         #self.print_info()
         #other_agent.print_info()
 
-        if self.margin_trade(other_agent,num_goods_to_trade):
-            self.color=LIME_GREEN
-            other_agent.color=LIME_GREEN
-            #self.print_info()
-            #other_agent.print_info()
-        else:
-            self.color=RED
-            other_agent.color=RED
-
-
+        traded = self.margin_trade(other_agent,num_goods_to_trade)
+        if show_trade:
+            if traded:
+                self.color=LIME_GREEN
+                other_agent.color=LIME_GREEN
+                #self.print_info()
+                #other_agent.print_info()
+            else:
+                self.color=RED
+                other_agent.color=RED
 
 
     #Trade on the margin of the other_agent
@@ -163,28 +176,31 @@ class Agent:
         print(" agent",self.id," utility ",self.get_utility())
 
     def move(self):
-        #doesn't need to be update every time, maybe find a way to avoid that
         self.update_color()
+        self.on_edge_x=False
+        self.on_edge_y=False
 
         # Move the center
         self.x += self.change_x
         self.y += self.change_y
 
         #Stay in bounds
-        if self.y > self.region.bottom - RADIUS or self.y < RADIUS+self.region.top:
-            self.change_y *= -1
-            self.y+=self.change_y
+        if self.y > self.region.bottom - self.radius or self.y < self.radius+self.region.top:
+            self.change_y = -self.change_y
+            self.y += self.change_y
+            self.on_edge_y=True
 
-        elif self.x > self.region.right-RADIUS or self.x < RADIUS+self.region.left:
-            self.change_x *= -1
-            self.x+=self.change_x
+        elif self.x > self.region.right-self.radius or self.x < self.radius+self.region.left:
+            self.change_x = -self.change_x
+            self.x += self.change_x
+            self.on_edge_x=True
 
 
     def collision(self,other_agent):
         #http://cgp.wikidot.com/circle-to-circle-collision-detection
         dx=self.x-other_agent.x
         dy=self.y-other_agent.y
-        r=RADIUS+RADIUS
+        r=self.radius+self.radius
         if(dx*dx)+(dy*dy)<r*r:
             return True
         return False
@@ -193,7 +209,7 @@ class Agent:
         x,y=point
         dx=self.x-x
         dy=self.y-y
-        r=RADIUS*RADIUS
+        r=self.radius*self.radius
         if (dx*dx)+(dy*dy)<r:
             return True
         return False
@@ -206,11 +222,11 @@ class Agent:
     def draw(self):
         x,y=self.get_location()
         if self.is_selected:
-            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y), RADIUS+SELECTED_WIDTH)
-        pygame.draw.circle(self.display, self.color, (x,y), RADIUS)
+            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
+        pygame.draw.circle(self.display, self.color, (x,y), self.radius)
 
 
     def remove_selected_circle(self):
         x,y=self.get_location()
-        pygame.draw.circle(self.display,WHITE, (x,y), RADIUS+SELECTED_WIDTH)
+        pygame.draw.circle(self.display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
         self.draw()
