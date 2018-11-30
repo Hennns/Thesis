@@ -30,7 +30,6 @@ import TextBox
 from ColorDefinitions import *
 
 
-
 #Sources
 #http://usingpython.com/pygame-intro/
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
@@ -63,6 +62,13 @@ TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
 BOTTOM_BORDER =HEIGHT
 RIGTH_BORDER =WIDTH-INFO_WIDTH
 LEFT_BORDER=0
+
+
+region_width=RIGTH_BORDER-LEFT_BORDER
+region_height=BOTTOM_BORDER-TOP_BORDER
+AGENT_REGION=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
+
+
 
 num_goods_to_trade=2
 
@@ -175,7 +181,6 @@ def step_function(button):
     draw_utility_graph(button.Display)
 
 
-
 def region_function(button):
     global  region_mode
     global agent_list
@@ -189,13 +194,8 @@ def region_function(button):
         button.text = "region off"
         button.color = RED
 
-        #THIS SHOULD BE GLOBAL CONSTANT MAYBE
-        region_width=RIGTH_BORDER-LEFT_BORDER
-        region_height=BOTTOM_BORDER-TOP_BORDER
-        region=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
-
         for agent in agent_list:
-            agent.region = pygame.Rect(region)
+            agent.region = pygame.Rect(AGENT_REGION)
 
 
 def clear():
@@ -269,7 +269,6 @@ def move_agents():
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
     for agent in agent_list:
         r,c = agent.box
-
         agent.move()
         for other_agent in get_nearby_agents(r,c):
             if agent.collision(other_agent):
@@ -282,8 +281,6 @@ def move_agents():
                 #print_total_utility()
                 break
         find_new_box(agent)
-
-
 
 
 def get_utility():
@@ -305,15 +302,6 @@ def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
-def new_agent(Display):
-    region_width=RIGTH_BORDER-LEFT_BORDER
-    region_height=BOTTOM_BORDER-TOP_BORDER
-    #MAKE GLOBAL CONSTANT
-    region=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
-
-    return new_agent_in_region(Display,region)
-
-
 def new_agent_in_region(Display,region):
     global initial_utility
 
@@ -324,6 +312,26 @@ def new_agent_in_region(Display,region):
 
     return agent
 
+
+def create_many_agents(Display, num):
+    global initial_utility
+    global agent_list
+    global AGENT_REGION
+
+    if region_mode:
+        r=settings["rows"]
+        c=settings["collumns"]
+        s=settings["space"]
+        rad = settings["radius"]
+
+        agent_regions = divide_rect(pygame.Rect(AGENT_REGION),r,c,s)
+        for i in range(num):
+            for r in range(len(agent_regions)):
+                for c in range(len(agent_regions[r])):
+                    agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
+    else:
+        for i in range(num):
+            agent_list.append(new_agent_in_region(Display,AGENT_REGION))
 
 def print_total_utility():
     global_utility = 0
@@ -355,7 +363,7 @@ def create_setting_box(name,rect):
     try:
         box.buffer = [str(i) for i in str(settings[box.name])]
     except KeyError:
-        print("no key for setting_box")
+        print("no key for setting box")
         pass
 
     return box
@@ -372,7 +380,6 @@ def main():
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
 
-
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
     set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
@@ -387,16 +394,6 @@ def main():
 
     initalize_button_list(Display)
 
-
-    #Test agents in seperate regions
-    num=100
-    agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),4,2,20)
-    for i in range(num):
-        for r in range(len(agent_regions)):
-            for c in range(len(agent_regions[r])):
-                #agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
-                pass
-
     run =True
     while run:
         for event in pygame.event.get():
@@ -407,7 +404,7 @@ def main():
 
                 #Make new agents by pressing space
                 if event.key == pygame.K_SPACE:
-                    agent_list.append(new_agent(Display))
+                    create_many_agents(Display,1)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
@@ -416,25 +413,8 @@ def main():
                 #check if input box is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        #PUT IN FUNCTION
-                        if region_mode:
-                            r=settings["rows"]
-                            c=settings["collumns"]
-                            s=settings["space"]
-                            rad = settings["radius"]
-                            #MAKE RECT GLOBAL CONSTANT
-                            agent_regions = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),r,c,s)
-                            for i in range(text.execute()):
-                                for r in range(len(agent_regions)):
-                                    for c in range(len(agent_regions[r])):
-                                        agent = Agent.Agent(agent_regions[r][c],Display,len(agent_list),rad)
-                                        agent.box = get_box(agent)
-                                        agent.draw()
-                                        #initial_utility += agent.get_utility()
-                                        agent_list.append(agent)
-                        else:
-                            for i in range(text.execute()):
-                                agent_list.append(new_agent(Display))
+                        create_many_agents(Display,text.execute())
+
                     #Delete last input
                     elif event.key == pygame.K_BACKSPACE:
                         if text.buffer:
@@ -448,14 +428,14 @@ def main():
                     for input_box in setting_box_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                                pass
+                                input_box.active= False
                                 #Setting radius too large makes collision detection fail
                                 #Probably bc the agents get's bigger than the bins they fall into
-                                #Delete last input
+                            #Delete last input
                             if event.key == pygame.K_BACKSPACE:
                                 if input_box.buffer:
                                     input_box.buffer.pop()
-                            #only allow valid input this setting
+                            #only allow valid input for this setting
                             elif event.unicode in input_box.ACCEPTED:
                                 input_box.buffer.append(event.unicode)
                             break
