@@ -11,6 +11,7 @@ import pygame
 import random
 import numpy as np
 from collections import deque
+import datetime
 
 #Make window appear centered
 import os
@@ -197,6 +198,14 @@ def region_function(button):
         for agent in agent_list:
             agent.region = pygame.Rect(AGENT_REGION)
 
+#https://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
+#Used to get current time
+def screenshot_function(button):
+    now=datetime.datetime.now()
+    current_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " +str(now.hour) + "h" +str(now.minute)+ "m" +str(now.second) +"s"
+    pygame.image.save(button.Display,current_time+" screenshot.jpg")
+
+
 
 def clear():
     global agent_list
@@ -226,8 +235,10 @@ def get_nearby_agents(current_r,current_c):
     for r in range(-1,2):
         for c in range(-1,2):
             try:
+                #Incorrect behavior on negative side
                 nearby_agents.extend(box_tracker[current_r-r][current_c-c])
             except IndexError:
+
                 continue
 
     return nearby_agents
@@ -267,6 +278,7 @@ def move_agents():
     box_tracker= [([[]] * BIN_NUM_COLLUMNS) for row in range(BIN_NUM_ROWS)]
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
+
     for agent in agent_list:
         r,c = agent.box
         agent.move()
@@ -350,12 +362,14 @@ def initalize_button_list(Display):
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
     region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"region on",small_text,Display,region_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
+    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"screenshot",small_text,Display,screenshot_function)
 
     button_list.append(reset_button)
     button_list.append(pause_button)
     button_list.append(step_button)
     button_list.append(region_button)
     button_list.append(settings_button)
+    button_list.append(screenshot_button)
 
 def create_setting_box(name,rect):
     box = TextBox.TextBox(rect)
@@ -506,9 +520,9 @@ def main():
         for b in button_list:
             b.draw_button()
 
-    #    font = pygame.font.Font(None, 30)
-    #    fps = font.render(str(int(clock.get_fps())), True, BLACK)
-    #    Display.blit(fps, (700, 50))
+        #font = pygame.font.Font(None, 30)
+        #fps = font.render(str(int(clock.get_fps())), True, BLACK)
+        #Display.blit(fps, (700, 50))
 
         #60 Frames per second
         clock.tick(60)
