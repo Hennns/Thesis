@@ -404,7 +404,7 @@ def on_top_of_other_agent(agent):
 def new_agent_in_region(Display,region):
     global initial_utility
 
-    for i in range(50):
+    for i in range(10):
         agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
         agent.box = get_box(agent)
 
@@ -426,16 +426,20 @@ def create_many_agents(Display, num):
         r=settings["rows"]
         c=settings["collumns"]
         s=settings["space"]
-        rad = settings["radius"]
+
 
         agent_regions = divide_rect(pygame.Rect(AGENT_REGION),r,c,s)
         for i in range(num):
             for r in range(len(agent_regions)):
                 for c in range(len(agent_regions[r])):
-                    agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
+                    agent = new_agent_in_region(Display,agent_regions[r][c])
+                    if agent is not None:
+                        agent_list.append(agent)
     else:
         for i in range(num):
-            agent_list.append(new_agent_in_region(Display,AGENT_REGION))
+            agent = new_agent_in_region(Display,AGENT_REGION)
+            if agent is not None:
+                agent_list.append(agent)
 
 def print_total_utility():
     global_utility = 0
