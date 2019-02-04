@@ -115,7 +115,8 @@ settings = {
             "rows": 1,
             "collumns": 1,
             "space": 20,
-            "random_num_goods": True
+            "random_num_goods": True,
+            "cobb_douglass": 1
             }
 
 
@@ -243,6 +244,7 @@ def get_nearby_agents(current_r,current_c):
 
     return nearby_agents
 
+#delete this function?
 def get_nearby_boxes(current_r,current_c):
     nearby_boxes = []
     for row in range(-1,2):
@@ -252,8 +254,12 @@ def get_nearby_boxes(current_r,current_c):
                     nearby_boxes.append((current_r-row,current_c-col))
     return nearby_boxes
 
-#Idea: Use direction agent is moving to find the new box?
+
+#thie needs some clean up!! idea is to use direction of agent to speed up calculations
 def find_new_box(agent):
+
+    global box_tracker
+
     r,c=agent.box
     x,y=agent.get_location()
 
@@ -261,12 +267,84 @@ def find_new_box(agent):
     if BOX_MAP[r][c].collidepoint(x,y):
         box_tracker[r][c].append(agent)
         return
+    """
+    if agent.change_x >0:
+        if r < BIN_NUM_ROWS:
+            if BOX_MAP[r+1][c].collidepoint(x,y):
+                box_tracker[r+1][c].append(agent)
+                agent.box=(r+1,c)
+                return
+
+            if agent.change_y>0:
+                if BOX_MAP[r][c+1].collidepoint(x,y):
+                    box_tracker[r][c+1].append(agent)
+                    agent.box=(r,c+1)
+                    return
+
+                if BOX_MAP[r+1][c+1].collidepoint(x,y):
+                    box_tracker[r+1][c+1].append(agent)
+                    agent.box=(r+1,c+1)
+                    return
+            else:
+                if BOX_MAP[r+1][c-1].collidepoint(x,y):
+                    box_tracker[r+1][c-1].append(agent)
+                    agent.box=(r+1,c-1)
+                    return
+
+                if BOX_MAP[r][c-1].collidepoint(x,y):
+                    box_tracker[r][c-1].append(agent)
+                    agent.box=(r,c-1)
+                    return
+        else:
+            if BOX_MAP[r][c+1].collidepoint(x,y):
+                box_tracker[r][c+1].append(agent)
+                agent.box=(r,c+1)
+                return
+            if BOX_MAP[r][c-1].collidepoint(x,y):
+                box_tracker[r][c-1].append(agent)
+                agent.box=(r,c-1)
+                return
+
+    if r > 0:
+        if BOX_MAP[r-1][c].collidepoint(x,y):
+            box_tracker[r-1][c].append(agent)
+            agent.box=(r-1,c)
+            return
+
+        if agent.change_y>0:
+            if BOX_MAP[r][c+1].collidepoint(x,y):
+                box_tracker[r][c+1].append(agent)
+                agent.box=(r,c+1)
+                return
+            if BOX_MAP[r-1][c+1].collidepoint(x,y):
+                box_tracker[r-1][c+1].append(agent)
+                agent.box=(r-1,c+1)
+                return
+        else:
+            if BOX_MAP[r][c-1].collidepoint(x,y):
+                box_tracker[r][c-1].append(agent)
+                agent.box=(r,c-1)
+                return
+            if BOX_MAP[r-1][c-1].collidepoint(x,y):
+                box_tracker[r-1][c-1].append(agent)
+                agent.box=(r-1,c-1)
+                return
+    if BOX_MAP[r][c-1].collidepoint(x,y):
+        box_tracker[r][c-1].append(agent)
+        agent.box=(r,c-1)
+        return
+
+    print("Math error")
+    print("r",r)
+    print("c",c)
+    """
 
     #Then check other nearby boxes
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
             agent.box=(row,col)
+            #print("new box is ",row,col)
             return
     #This should never happen
     print("could not find new box")
@@ -314,15 +392,29 @@ def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
+def on_top_of_other_agent(agent):
+    r,c =agent.box
+    for other_agent in get_nearby_agents(r,c):
+        if agent.collision(other_agent):
+            #print("agent on top of other agent at spawn")
+            return True
+    return False
+
+
 def new_agent_in_region(Display,region):
     global initial_utility
 
-    agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
-    agent.box = get_box(agent)
-    agent.draw()
-    initial_utility += agent.get_utility()
+    for i in range(50):
+        agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
+        agent.box = get_box(agent)
 
-    return agent
+        if not on_top_of_other_agent(agent):
+            agent.draw()
+            initial_utility += agent.get_utility()
+            find_new_box(agent)
+            return agent
+
+    return None
 
 
 def create_many_agents(Display, num):
@@ -351,14 +443,15 @@ def print_total_utility():
         global_utility += agent.get_utility()
     print(global_utility)
 
-
+## TODO:
 #make a create button function
 def initalize_button_list(Display):
     global button_list
 
     small_text = pygame.font.Font("freesansbold.ttf",20)
-    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
     pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
+    reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
+    #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
     region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"region on",small_text,Display,region_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
@@ -382,6 +475,21 @@ def create_setting_box(name,rect):
 
     return box
 
+
+def initialize_setting_box_list():
+    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_collumns = create_setting_box("collumns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_utiltty_function = create_setting_box("cobb_douglass",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+5*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+
+    setting_box_list.append(set_radius)
+    setting_box_list.append(set_collumns)
+    setting_box_list.append(set_rows)
+    setting_box_list.append(set_trade)
+    setting_box_list.append(set_utiltty_function)
+
+
 def main():
     global wait
     global change_settings
@@ -396,16 +504,9 @@ def main():
 
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_collumns = create_setting_box("collumns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    setting_box_list.append(set_radius)
-    setting_box_list.append(set_collumns)
-    setting_box_list.append(set_rows)
-    setting_box_list.append(set_trade)
 
+    initialize_setting_box_list()
     initalize_button_list(Display)
 
     run =True
