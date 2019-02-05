@@ -8,12 +8,11 @@ from ColorDefinitions import *
 #from Thesis.ColorDefinitions import *
 
 SPEED=3
-NUM_GOODS=2
 
 
-INITIAL_MAX_NUM_GOODS=128
+INITIAL_MAX_NUM_GOODS=256
 INITIAL_MAX_PREFERENCE=16
-INITIAL_MIN_NUM_GOODS=2
+INITIAL_MIN_NUM_GOODS=128
 INITIAL_MIN_PREFERENCE=2
 
 
@@ -21,11 +20,10 @@ INITIAL_MIN_PREFERENCE=2
 SELECTED_WIDTH=2
 SELECTED_COLOR=YELLOW
 
-#change color as endowments change
 class Agent:
 
     def update_color(self):
-        scaler=self.goods["good number: 0"][0]/(self.goods["good number: 0"][0]+self.goods["good number: 1"][0])
+        scaler=self.apples/(self.apples+self.oranges)
         r=0
         g=int(255*(max(0,1-scaler)))
         b=255
@@ -33,12 +31,15 @@ class Agent:
 
 
     def create_goods(self):
-        #name of good, amount of good and preference of good
-        for i in range(NUM_GOODS):
-            self.goods["good number: "+str(len(self.goods))] =[
-            random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2,
-            random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
-            ]
+        self.apples = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
+        #self.pref_apples = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+
+        self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
+        #self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+
+        self.pref_apples = random.randint(1,99)/100
+        self.pref_oranges = 1-self.pref_apples
+
 
 
     #Initialize variables
@@ -50,11 +51,14 @@ class Agent:
         self.color = BLUE
         self.radius =radius
         self.is_selected = False
-        self.goods = {}
+        self.apples = 0
+        self.oranges = 0
+        self.pref_apples = 0
+        self.pref_oranges = 0
+
+
         self.box = (0,0)
 
-
-        #self.__dict__.update(settings)
 
         self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
         self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
@@ -114,35 +118,36 @@ class Agent:
                 other_agent.color=RED
 
 
+
     #Trade on the margin of the other_agent
     def margin_trade(self,other_agent,num_goods_to_trade):
 
         if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
             compensation=other_agent.marginal_rate_of_substitution()
             compensation=compensation*num_goods_to_trade
-            if other_agent.goods["good number: 0"][0]-num_goods_to_trade <0 or self.goods["good number: 1"][0]-compensation <0:
+            if other_agent.apples-num_goods_to_trade <0 or self.oranges-compensation <0:
                 return False
             #print("bigger mrs")
             #print("compensation is",compensation)
-            self.goods["good number: 0"][0]+=num_goods_to_trade
-            other_agent.goods["good number: 0"][0]-=num_goods_to_trade
+            self.apples+=num_goods_to_trade
+            other_agent.apples-=num_goods_to_trade
 
-            self.goods["good number: 1"][0]-=compensation
-            other_agent.goods["good number: 1"][0]+=compensation
+            self.oranges-=compensation
+            other_agent.oranges+=compensation
         else:
             compensation=other_agent.marginal_rate_of_substitution_reverse()
             compensation=compensation*num_goods_to_trade
-            if self.goods["good number: 0"][0]-compensation <0 or other_agent.goods["good number: 1"][0]-num_goods_to_trade <0:
+            if self.apples-compensation <0 or other_agent.oranges-num_goods_to_trade <0:
                 return False
 
             #print("smaller mrs")
             #print("compensation is",compensation)
 
-            self.goods["good number: 0"][0]-=compensation
-            other_agent.goods["good number: 0"][0]+=compensation
+            self.apples-=compensation
+            other_agent.apples+=compensation
 
-            self.goods["good number: 1"][0]+=num_goods_to_trade
-            other_agent.goods["good number: 1"][0]-=num_goods_to_trade
+            self.oranges+=num_goods_to_trade
+            other_agent.oranges-=num_goods_to_trade
 
         return True
 
@@ -159,20 +164,26 @@ class Agent:
 
 
     def marginal_rate_of_substitution(self):
-        return self.goods["good number: 0"][1]/self.goods["good number: 1"][1]
+        return self.pref_apples/self.pref_oranges
 
     def marginal_rate_of_substitution_reverse(self):
-        return self.goods["good number: 1"][1]/self.goods["good number: 0"][1]
+        return self.pref_oranges/self.pref_apples
 
 
+    #linear, this can be a single return statement
     def get_utility(self):
-        utility=0
-        for good in self.goods:
-            utility+=self.goods[good][0]*self.goods[good][1]
+        utility = 0
+        utility += self.pref_apples*self.apples + self.pref_oranges*self.oranges
         return utility
 
+    def get_utility_cobb_douglass(self):
+        return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
+
+
+
     def print_info(self):
-        print(" agent",self.id," info ",self.goods)
+        print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
+        print(" agent",self.id," pref_apples:",self.pref_apples ," pref_oranges:",self.pref_oranges)
         print(" agent",self.id," utility ",self.get_utility())
 
     def move(self):

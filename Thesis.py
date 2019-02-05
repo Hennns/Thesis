@@ -28,6 +28,7 @@ from Thesis.ColorDefinitions import *
 import Agent
 import Button
 import TextBox
+import Market
 from ColorDefinitions import *
 
 
@@ -61,8 +62,8 @@ BUTTON_SPACE = 10
 #Border of agents
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
 BOTTOM_BORDER =HEIGHT
-RIGTH_BORDER =WIDTH-INFO_WIDTH
-LEFT_BORDER=0
+RIGTH_BORDER = WIDTH-INFO_WIDTH
+LEFT_BORDER = 0
 
 
 region_width=RIGTH_BORDER-LEFT_BORDER
@@ -71,7 +72,7 @@ AGENT_REGION=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
 
 
 
-num_goods_to_trade=2
+num_goods_to_trade=1
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
@@ -100,12 +101,12 @@ def divide_rect(rectangle,rows,columns,space):
 
 #Set number of bins (used to do collison calculations faster)
 BIN_NUM_ROWS=16
-BIN_NUM_COLLUMNS=16
+BIN_NUM_COLUMNS=16
 
-BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLLUMNS,0)
+BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
 
-#each row+collum represents a box and contains a list of agents in that box
-box_tracker= [([[]] * BIN_NUM_COLLUMNS) for row in range(BIN_NUM_COLLUMNS)]
+#each row+colum represents a box and contains a list of agents in that box
+box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 settings = {
@@ -113,9 +114,10 @@ settings = {
             "perfect_substitutes": True,
             "show trade": 0, #aka False
             "rows": 1,
-            "collumns": 1,
+            "columns": 1,
             "space": 20,
-            "random_num_goods": True
+            "random_num_goods": True,
+            "cobb_douglass": 1
             }
 
 
@@ -217,8 +219,6 @@ def clear():
     utility_tracker=[]
     utility_grapher.clear()
 
-# In[4]:
-
 def get_box(agent):
     x,y = agent.get_location()
     for row in range(len(BOX_MAP)):
@@ -243,17 +243,22 @@ def get_nearby_agents(current_r,current_c):
 
     return nearby_agents
 
+#delete this function?
 def get_nearby_boxes(current_r,current_c):
     nearby_boxes = []
     for row in range(-1,2):
         if 0<= current_r-row <BIN_NUM_ROWS:
             for col in range(-1,2):
-                if 0<=current_c-col <BIN_NUM_COLLUMNS and not row==col==0:
+                if 0<=current_c-col <BIN_NUM_COLUMNS and not row==col==0:
                     nearby_boxes.append((current_r-row,current_c-col))
     return nearby_boxes
 
-#Idea: Use direction agent is moving to find the new box?
+
+#thie needs some clean up!! idea is to use direction of agent to speed up calculations
 def find_new_box(agent):
+
+    global box_tracker
+
     r,c=agent.box
     x,y=agent.get_location()
 
@@ -261,12 +266,84 @@ def find_new_box(agent):
     if BOX_MAP[r][c].collidepoint(x,y):
         box_tracker[r][c].append(agent)
         return
+    """
+    if agent.change_x >0:
+        if r < BIN_NUM_ROWS:
+            if BOX_MAP[r+1][c].collidepoint(x,y):
+                box_tracker[r+1][c].append(agent)
+                agent.box=(r+1,c)
+                return
+
+            if agent.change_y>0:
+                if BOX_MAP[r][c+1].collidepoint(x,y):
+                    box_tracker[r][c+1].append(agent)
+                    agent.box=(r,c+1)
+                    return
+
+                if BOX_MAP[r+1][c+1].collidepoint(x,y):
+                    box_tracker[r+1][c+1].append(agent)
+                    agent.box=(r+1,c+1)
+                    return
+            else:
+                if BOX_MAP[r+1][c-1].collidepoint(x,y):
+                    box_tracker[r+1][c-1].append(agent)
+                    agent.box=(r+1,c-1)
+                    return
+
+                if BOX_MAP[r][c-1].collidepoint(x,y):
+                    box_tracker[r][c-1].append(agent)
+                    agent.box=(r,c-1)
+                    return
+        else:
+            if BOX_MAP[r][c+1].collidepoint(x,y):
+                box_tracker[r][c+1].append(agent)
+                agent.box=(r,c+1)
+                return
+            if BOX_MAP[r][c-1].collidepoint(x,y):
+                box_tracker[r][c-1].append(agent)
+                agent.box=(r,c-1)
+                return
+
+    if r > 0:
+        if BOX_MAP[r-1][c].collidepoint(x,y):
+            box_tracker[r-1][c].append(agent)
+            agent.box=(r-1,c)
+            return
+
+        if agent.change_y>0:
+            if BOX_MAP[r][c+1].collidepoint(x,y):
+                box_tracker[r][c+1].append(agent)
+                agent.box=(r,c+1)
+                return
+            if BOX_MAP[r-1][c+1].collidepoint(x,y):
+                box_tracker[r-1][c+1].append(agent)
+                agent.box=(r-1,c+1)
+                return
+        else:
+            if BOX_MAP[r][c-1].collidepoint(x,y):
+                box_tracker[r][c-1].append(agent)
+                agent.box=(r,c-1)
+                return
+            if BOX_MAP[r-1][c-1].collidepoint(x,y):
+                box_tracker[r-1][c-1].append(agent)
+                agent.box=(r-1,c-1)
+                return
+    if BOX_MAP[r][c-1].collidepoint(x,y):
+        box_tracker[r][c-1].append(agent)
+        agent.box=(r,c-1)
+        return
+
+    print("Math error")
+    print("r",r)
+    print("c",c)
+    """
 
     #Then check other nearby boxes
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
             agent.box=(row,col)
+            #print("new box is ",row,col)
             return
     #This should never happen
     print("could not find new box")
@@ -275,9 +352,11 @@ def find_new_box(agent):
 
 def move_agents():
     global box_tracker
-    box_tracker= [([[]] * BIN_NUM_COLLUMNS) for row in range(BIN_NUM_ROWS)]
+    box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
+
+    m = Market.Market()
 
     for agent in agent_list:
         r,c = agent.box
@@ -287,18 +366,22 @@ def move_agents():
                 agent.bounce(other_agent)
 
                 if random.getrandbits(1):
-                    other_agent.trade(agent,num_goods_to_trade,settings["show trade"])
+                    #other_agent.trade(agent,num_goods_to_trade,settings["show trade"])
+                    m.trade(agent, other_agent, num_goods_to_trade,settings["show trade"])
                 else:
-                    agent.trade(other_agent,num_goods_to_trade,settings["show trade"])
+                    m.trade(other_agent, agent, num_goods_to_trade,settings["show trade"])
+                    #agent.trade(other_agent,num_goods_to_trade,settings["show trade"])
                 #print_total_utility()
                 break
         find_new_box(agent)
+    print("Price: ",m.get_price())
 
 
 def get_utility():
     utility=0
     for agent in agent_list:
-        utility+=agent.get_utility()
+        #utility+=agent.get_utility()
+        utility += agent.get_utility_cobb_douglass()
     return utility
 
 def draw_agents():
@@ -314,15 +397,29 @@ def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
     return textSurface, textSurface.get_rect()
 
+def on_top_of_other_agent(agent):
+    r,c =agent.box
+    for other_agent in get_nearby_agents(r,c):
+        if agent.collision(other_agent):
+            #print("agent on top of other agent at spawn")
+            return True
+    return False
+
+
 def new_agent_in_region(Display,region):
     global initial_utility
 
-    agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
-    agent.box = get_box(agent)
-    agent.draw()
-    initial_utility += agent.get_utility()
+    for i in range(10):
+        agent=Agent.Agent(region,Display,len(agent_list),settings["radius"])
+        agent.box = get_box(agent)
 
-    return agent
+        if not on_top_of_other_agent(agent):
+            agent.draw()
+            initial_utility += agent.get_utility()
+            find_new_box(agent)
+            return agent
+
+    return None
 
 
 def create_many_agents(Display, num):
@@ -332,18 +429,23 @@ def create_many_agents(Display, num):
 
     if region_mode:
         r=settings["rows"]
-        c=settings["collumns"]
+        c=settings["columns"]
         s=settings["space"]
-        rad = settings["radius"]
+
 
         agent_regions = divide_rect(pygame.Rect(AGENT_REGION),r,c,s)
         for i in range(num):
             for r in range(len(agent_regions)):
                 for c in range(len(agent_regions[r])):
-                    agent_list.append(new_agent_in_region(Display,agent_regions[r][c]))
+                    agent = new_agent_in_region(Display,agent_regions[r][c])
+                    if agent is not None:
+                        agent_list.append(agent)
     else:
         for i in range(num):
-            agent_list.append(new_agent_in_region(Display,AGENT_REGION))
+            agent = new_agent_in_region(Display,AGENT_REGION)
+            if agent is not None:
+                agent_list.append(agent)
+    print("Total agents:",len(agent_list))
 
 def print_total_utility():
     global_utility = 0
@@ -351,14 +453,15 @@ def print_total_utility():
         global_utility += agent.get_utility()
     print(global_utility)
 
-
+## TODO:
 #make a create button function
 def initalize_button_list(Display):
     global button_list
 
     small_text = pygame.font.Font("freesansbold.ttf",20)
-    reset_button = Button.button(BUTTON_X+BUTTON_WIDTH+BUTTON_SPACE,BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
     pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
+    reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
+    #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
     region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"region on",small_text,Display,region_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
@@ -382,6 +485,21 @@ def create_setting_box(name,rect):
 
     return box
 
+
+def initialize_setting_box_list():
+    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_columns = create_setting_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    set_utiltty_function = create_setting_box("cobb_douglass",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+5*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+
+    setting_box_list.append(set_radius)
+    setting_box_list.append(set_columns)
+    setting_box_list.append(set_rows)
+    setting_box_list.append(set_trade)
+    setting_box_list.append(set_utiltty_function)
+
+
 def main():
     global wait
     global change_settings
@@ -396,16 +514,9 @@ def main():
 
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_collumns = create_setting_box("collumns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    setting_box_list.append(set_radius)
-    setting_box_list.append(set_collumns)
-    setting_box_list.append(set_rows)
-    setting_box_list.append(set_trade)
 
+    initialize_setting_box_list()
     initalize_button_list(Display)
 
     run =True
@@ -520,9 +631,13 @@ def main():
         for b in button_list:
             b.draw_button()
 
-        #font = pygame.font.Font(None, 30)
+        font = pygame.font.Font(None, 30)
         #fps = font.render(str(int(clock.get_fps())), True, BLACK)
         #Display.blit(fps, (700, 50))
+
+        u=font.render(str(get_utility()),True,BLACK)
+        Display.blit(u,(850,150))
+
 
         #60 Frames per second
         clock.tick(60)
