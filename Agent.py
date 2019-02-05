@@ -10,9 +10,9 @@ from ColorDefinitions import *
 SPEED=3
 
 
-INITIAL_MAX_NUM_GOODS=128
+INITIAL_MAX_NUM_GOODS=256
 INITIAL_MAX_PREFERENCE=16
-INITIAL_MIN_NUM_GOODS=2
+INITIAL_MIN_NUM_GOODS=128
 INITIAL_MIN_PREFERENCE=2
 
 
@@ -20,7 +20,6 @@ INITIAL_MIN_PREFERENCE=2
 SELECTED_WIDTH=2
 SELECTED_COLOR=YELLOW
 
-#change color as endowments change
 class Agent:
 
     def update_color(self):
@@ -33,10 +32,15 @@ class Agent:
 
     def create_goods(self):
         self.apples = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
-        self.pref_apples = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+        #self.pref_apples = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
 
         self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
-        self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+        #self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+
+        self.pref_apples = random.randint(1,99)/100
+        self.pref_oranges = 1-self.pref_apples
+
+
 
     #Initialize variables
     def __init__(self,region,display,ID,radius):
@@ -49,14 +53,12 @@ class Agent:
         self.is_selected = False
         self.apples = 0
         self.oranges = 0
-        self.pref_apple = 0
+        self.pref_apples = 0
         self.pref_oranges = 0
 
 
         self.box = (0,0)
 
-
-        #self.__dict__.update(settings)
 
         self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
         self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
@@ -116,12 +118,6 @@ class Agent:
                 other_agent.color=RED
 
 
-    def cobb_douglass_trade(self, other_agent, num_goods_to_trade):
-
-        return False
-
-
-
 
     #Trade on the margin of the other_agent
     def margin_trade(self,other_agent,num_goods_to_trade):
@@ -176,12 +172,18 @@ class Agent:
 
     #linear, this can be a single return statement
     def get_utility(self):
-        utility=0
+        utility = 0
         utility += self.pref_apples*self.apples + self.pref_oranges*self.oranges
         return utility
 
+    def get_utility_cobb_douglass(self):
+        return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
+
+
+
     def print_info(self):
-        print(" agent",self.id," apples:",self.apples +" oranges:",self.oranges)
+        print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
+        print(" agent",self.id," pref_apples:",self.pref_apples ," pref_oranges:",self.pref_oranges)
         print(" agent",self.id," utility ",self.get_utility())
 
     def move(self):
