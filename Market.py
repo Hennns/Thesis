@@ -5,7 +5,8 @@ from ColorDefinitions import *
 class Market:
 
 
-    def __init__(self):
+    def __init__(self,region):
+        self.region = region
         self.price = 0
         self.num_trades = 1
         self.agents = []
