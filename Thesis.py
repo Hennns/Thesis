@@ -147,8 +147,10 @@ def settings_function(button):
         initalize_button_list(button.Display)
         for input_box in setting_box_list:
             settings[input_box.name]=input_box.get_input_as_int()
-            #update markets, if row/columns have changed
 
+            #update markets, if row/columns have changed
+            #todo for now this is temporarily
+        initialize()
 
 def reset_function(button):
     clear()
@@ -449,20 +451,16 @@ def new_agent_in_region(Display,region):
 
 def create_many_agents(Display, num):
     global initial_utility
-    #global agent_list
     global SINGLE_MARKET_BORDER
     global market_list
-    counter = 0
 
-    r=settings["rows"]
-    c=settings["columns"]
-    s=settings["space"]
-    agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
+
+    counter = 0
 
     for row in range(len(market_list)): #is this just the same as r=settings["rows"]?
         for column in range(len(market_list[row])): #and same here?
             for i in range(num):
-                agent = new_agent_in_region(Display,agent_regions[row][column])
+                agent = new_agent_in_region(Display,market_list[row][column].region)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
 
@@ -533,9 +531,9 @@ def initialize():
     r=settings["rows"]
     c=settings["columns"]
     s=settings["space"]
-    #agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
+    agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
 
-    market_list = [[Market.Market() for row in range(r)] for collumn in range(c)]
+    market_list = [[Market.Market(agent_regions[row][column]) for row in range(r)] for column in range(c)]
     print(market_list[0][0].price, "test")
 
 def main():
