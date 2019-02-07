@@ -8,6 +8,8 @@ class Market:
     def __init__(self):
         self.price = 0
         self.num_trades = 1
+        self.agents = []
+
 
     def get_price(self):
         if self.num_trades >1:
