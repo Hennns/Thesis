@@ -19,6 +19,7 @@ class Market:
 
 
     def trade(self,agent,other_agent,num_goods_to_trade,show_trade):
+        self.num_trades += 1
         #print()
         #self.print_info()
         #other_agent.print_info()

@@ -148,8 +148,8 @@ def settings_function(button):
         for input_box in setting_box_list:
             settings[input_box.name]=input_box.get_input_as_int()
 
-            #update markets, if row/columns have changed
-            #todo for now this is temporarily
+        #update markets, if row/columns have changed
+        #todo for now this is temporarily and it will clear all market data
         initialize()
 
 def reset_function(button):
@@ -208,8 +208,6 @@ def region_function(button):
             new_market.agents.append(market.agents)
         market_list = [new_market]
 
-        #for agent in agent_list:
-        #    agent.region = pygame.Rect(SINGLE_MARKET_BORDER)
 
 #https://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
 #Used to get current time
@@ -375,6 +373,8 @@ def move_agents():
     i=0
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
+            market_list[row][column].price = 0
+            market_list[row][column].num_trades = 1
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
@@ -399,11 +399,12 @@ def move_agents():
 def get_utility():
     global market_list
     utility=0
-    return 0
-    for market in market_list:
-        for agent in market.agents:
-            #utility+=agent.get_utility()
-            utility += agent.get_utility_cobb_douglass()
+    for row in range(len(market_list)):
+        for column in range(len(market_list[row])):
+            #keep utility stored in each market
+            for agent in market_list[row][column].agents:
+                #utility+=agent.get_utility()
+                utility += agent.get_utility_cobb_douglass()
     return utility
 
 def draw_agents():
@@ -682,7 +683,7 @@ def main():
 
 
         #60 Frames per second
-        clock.tick(60)
+        clock.tick(55)
 
         #update the screen
         pygame.display.flip()
