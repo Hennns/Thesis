@@ -62,26 +62,26 @@ BUTTON_SPACE = 10
 
 #Border of agents
 TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
-BOTTOM_BORDER =HEIGHT
+BOTTOM_BORDER = HEIGHT
 RIGTH_BORDER = WIDTH-INFO_WIDTH
 LEFT_BORDER = 0
 
 
-region_width=RIGTH_BORDER-LEFT_BORDER
-region_height=BOTTOM_BORDER-TOP_BORDER
-SINGLE_MARKET_BORDER=(LEFT_BORDER,TOP_BORDER,region_width,region_height)
+region_width = RIGTH_BORDER-LEFT_BORDER
+region_height = BOTTOM_BORDER-TOP_BORDER
+SINGLE_MARKET_BORDER = (LEFT_BORDER,TOP_BORDER,region_width,region_height)
 
 
 
-num_goods_to_trade=1
+num_goods_to_trade = 1
 num_agents = 0
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
 
 utility_tracker = []
-utility_grapher = deque(maxlen =INFO_WIDTH)
-utility_x_cordinates=list(range(RIGTH_BORDER,WIDTH))
+utility_grapher = deque(maxlen=INFO_WIDTH)
+utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
 
@@ -192,6 +192,7 @@ def step_function(button):
 def region_function(button):
     global  region_mode
     global market_list
+    global SINGLE_MARKET_BORDER
     region_mode = not region_mode
 
     if region_mode:
@@ -203,10 +204,15 @@ def region_function(button):
         button.text = "region off"
         button.color = RED
 
-        new_market = Market.Market
-        for market in market_list:
-            new_market.agents.append(market.agents)
-        market_list = [new_market]
+        #DO borders by market? would use less memory
+        new_region = pygame.Rect(SINGLE_MARKET_BORDER)
+
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                for agent in market_list[row][column].agents:
+                    agent.region = new_region
+                #market_list[row][column].region = SINGLE_MARKET_BORDER
+
 
 
 #https://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
@@ -411,7 +417,13 @@ def draw_agents():
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             for agent in market_list[row][column].agents:
-                    agent.draw()
+                agent.draw()
+
+def draw_markets(Display, color):
+    global market_list
+    for row in range(len(market_list)):
+        for column in range(len(market_list[row])):
+            pygame.draw.rect(Display, color, market_list[row][column].region, 1)
 
 def draw_utility_graph(Display):
     if len(utility_grapher)>1:
@@ -533,9 +545,8 @@ def initialize():
     c=settings["columns"]
     s=settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-
     market_list = [[Market.Market(agent_regions[row][column]) for row in range(r)] for column in range(c)]
-    print(market_list[0][0].price, "test")
+
 
 def main():
     global wait
@@ -674,16 +685,25 @@ def main():
         for b in button_list:
             b.draw_button()
 
+        draw_markets(Display,BLACK)
+
         font = pygame.font.Font(None, 30)
         #fps = font.render(str(int(clock.get_fps())), True, BLACK)
         #Display.blit(fps, (700, 50))
 
-        u=font.render(str(get_utility()),True,BLACK)
-        Display.blit(u,(850,150))
+        x = 100
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                u=font.render(str(market_list[row][column].price),True,BLACK)
+                Display.blit(u,(850,x))
+                x += 50
+
+    #    u=font.render(str(get_utility()),True,BLACK)
+    #    Display.blit(u,(850,150))
 
 
         #60 Frames per second
-        clock.tick(55)
+        clock.tick(60)
 
         #update the screen
         pygame.display.flip()
