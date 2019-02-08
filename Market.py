@@ -5,7 +5,9 @@ from ColorDefinitions import *
 class Market:
 
 
-    def __init__(self,region):
+    def __init__(self,region,color):
+        self.color = color
+        self.is_selected = False
         self.region = region
         self.price = 0
         self.num_trades = 1
@@ -110,3 +112,10 @@ class Market:
             return agent.pref_oranges/agent.pref_apples * agent.apples/agent.oranges
         except ZeroDivisionError:
             agent.print_info()
+
+
+    def get_utility(self):
+        utility = 0
+        for agent in self.agents:
+            utility += agent.get_utility_cobb_douglass()
+        return utility
