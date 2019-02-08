@@ -150,11 +150,12 @@ def settings_function(button):
 
         #update markets, if row/columns have changed
         #todo for now this is temporarily and it will clear all market data
-        initialize()
+        initialize_market()
 
 def reset_function(button):
     clear()
     button.Display.fill(WHITE)
+    initialize_market()
 
 def return_function(button):
     global change_settings
@@ -204,7 +205,7 @@ def region_function(button):
         button.text = "region off"
         button.color = RED
 
-        #DO borders by market? would use less memory
+        #Do borders by market? would use less memory compared to by agents
         new_region = pygame.Rect(SINGLE_MARKET_BORDER)
 
         for row in range(len(market_list)):
@@ -254,14 +255,13 @@ def get_nearby_agents(current_r,current_c):
     for r in range(-1,2):
         for c in range(-1,2):
             try:
-                #Incorrect behavior on negative side
                 nearby_agents.extend(box_tracker[current_r-r][current_c-c])
             except IndexError:
                 continue
-
     return nearby_agents
 
 #delete this function?
+#can use same logic as function above
 def get_nearby_boxes(current_r,current_c):
     nearby_boxes = []
     for row in range(-1,2):
@@ -407,10 +407,7 @@ def get_utility():
     utility=0
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
-            #keep utility stored in each market
-            for agent in market_list[row][column].agents:
-                #utility+=agent.get_utility()
-                utility += agent.get_utility_cobb_douglass()
+            utility += market_list[row][column].get_utility()
     return utility
 
 def draw_agents():
@@ -419,11 +416,11 @@ def draw_agents():
             for agent in market_list[row][column].agents:
                 agent.draw()
 
-def draw_markets(Display, color):
+def draw_markets(Display):
     global market_list
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
-            pygame.draw.rect(Display, color, market_list[row][column].region, 1)
+            pygame.draw.rect(Display, market_list[row][column].color, market_list[row][column].region, 1)
 
 def draw_utility_graph(Display):
     if len(utility_grapher)>1:
@@ -447,7 +444,7 @@ def new_agent_in_region(Display,region):
     global initial_utility
     global num_agents
 
-    for i in range(10):
+    for i in range(20):
         agent=Agent.Agent(region,Display,num_agents+1,settings["radius"])
         agent.box = get_box(agent)
 
@@ -463,27 +460,18 @@ def new_agent_in_region(Display,region):
 
 
 def create_many_agents(Display, num):
-    global initial_utility
-    global SINGLE_MARKET_BORDER
+    global num_agents
     global market_list
 
-
-    counter = 0
-
-    for row in range(len(market_list)): #is this just the same as r=settings["rows"]?
-        for column in range(len(market_list[row])): #and same here?
+    for row in range(len(market_list)):
+        for column in range(len(market_list[row])):
             for i in range(num):
                 agent = new_agent_in_region(Display,market_list[row][column].region)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
 
 
-
-    for row in range(len(market_list)): #is this just the same as r=settings["rows"]?
-        for column in range(len(market_list[row])): #and same here?
-            for agent in market_list[row][column].agents:
-                counter +=1
-    print(counter," number agents")
+    print(num_agents," number agents")
 
 def print_total_utility():
     global_utility = 0
@@ -538,21 +526,37 @@ def initialize_setting_box_list():
     setting_box_list.append(set_utiltty_function)
 
 
-def initialize():
+def initialize_market():
     global market_list
 
     r=settings["rows"]
     c=settings["columns"]
     s=settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-    market_list = [[Market.Market(agent_regions[row][column]) for row in range(r)] for column in range(c)]
+    market_list = [[Market.Market(agent_regions[row][column],BLACK) for row in range(r)] for column in range(c)]
 
+def market_clicked(market, mouse):
+    global wait
+    for agent in market.agents:
+        if agent.is_point_over_agent(mouse):
+            agent.is_selected = not agent.is_selected
+            if wait:
+                if agent.is_selected:
+                    agent.draw()
+                else:
+                    agent.remove_selected_circle()
+                    draw_agents()
+            return
+    market.is_selected = not market.is_selected
+    if market.is_selected:
+        market.color = YELLOW
+    else: market.color = BLACK
 
 def main():
     global wait
     global change_settings
     global setting_box_list
-    global region_mode
+    global region_mode #Don't need this to be a global variable
     global market_list
 
     pygame.init()
@@ -562,15 +566,14 @@ def main():
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
 
-
+    font = pygame.font.Font(None, 30)
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
-    initialize()
-
+    initialize_market()
     initialize_setting_box_list()
     initalize_button_list(Display)
 
-    run =True
+    run = True
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -637,19 +640,12 @@ def main():
                 #if the mouse is above the input box it is not above anything else
                 elif not text.active:
                     #check if the mouse is above an agent
-                    for row in range(len(market_list)): #is this just the same as r=settings["rows"]?
-                        for column in range(len(market_list[row])): #and same here?
-                            for agent in market_list[row][column].agents:
-                                #check if market is clicked before looping over agents
-                                if agent.is_point_over_agent(mouse):
-                                    agent.is_selected=not agent.is_selected
-                                    if wait:
-                                        if agent.is_selected:
-                                            agent.draw()
-                                        else:
-                                            agent.remove_selected_circle()
-                                            draw_agents()
-                                        break
+                    for row in range(len(market_list)):
+                        for column in range(len(market_list[row])):
+                            #check if market is clicked before looping over agents
+                            if market_list[row][column].region.collidepoint(mouse):
+                                market_clicked(market_list[row][column], mouse)
+                                break
 
         if change_settings:
             for input_box in setting_box_list:
@@ -662,21 +658,20 @@ def main():
                 Display.blit(textSurf, textRect)
         else:
             if wait:
-                button_list[1].color=GREEN
-                button_list[1].text="Start"
-                #pause_button.color=GREEN
-                #pause_button.text="Start"
+                button_list[1].color = GREEN
+                button_list[1].text = "Start"
+
             else:
                 Display.fill(WHITE)
                 move_agents()
                 draw_agents()
-                #step_button.color=GREEN
-                #pause_button.color=RED
-                #pause_button.text="Pause"
-                button_list[1].color=RED
-                button_list[1].text="Pause"
-                button_list[2].color=GREEN
+                button_list[1].color = RED
+                button_list[1].text = "Pause"
+                button_list[2].color = GREEN
                 draw_utility_graph(Display)
+
+            draw_markets(Display)
+
             #draw the input box
             text.update()
             text.draw(Display)
@@ -685,21 +680,18 @@ def main():
         for b in button_list:
             b.draw_button()
 
-        draw_markets(Display,BLACK)
 
-        font = pygame.font.Font(None, 30)
-        #fps = font.render(str(int(clock.get_fps())), True, BLACK)
-        #Display.blit(fps, (700, 50))
+
+        fps = font.render(str(int(clock.get_fps())), True, BLACK)
+        Display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
         x = 100
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
-                u=font.render(str(market_list[row][column].price),True,BLACK)
+                u = font.render(str(market_list[row][column].price),True,BLACK)
                 Display.blit(u,(850,x))
                 x += 50
 
-    #    u=font.render(str(get_utility()),True,BLACK)
-    #    Display.blit(u,(850,150))
 
 
         #60 Frames per second
