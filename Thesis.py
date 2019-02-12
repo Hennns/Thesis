@@ -48,6 +48,18 @@ change_settings = False
 region_mode = True
 
 
+settings = {
+            "radius" : 10,
+            "perfect_substitutes": True,
+            "show trade": 0, #aka False
+            "rows": 1,
+            "columns": 1,
+            "space": 20,
+            "random_num_goods": True,
+            "cobb_douglass": 1
+            }
+
+
 # In[2]:
 WIDTH= 1200
 HEIGHT =800
@@ -111,16 +123,7 @@ BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,
 box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
-settings = {
-            "radius" : 10,
-            "perfect_substitutes": True,
-            "show trade": 0, #aka False
-            "rows": 1,
-            "columns": 1,
-            "space": 20,
-            "random_num_goods": True,
-            "cobb_douglass": 1
-            }
+
 
 
 # In[3]:
@@ -191,27 +194,36 @@ def step_function(button):
 
 
 def region_function(button):
-    global  region_mode
+    global region_mode
     global market_list
     global SINGLE_MARKET_BORDER
+    global settings
     region_mode = not region_mode
 
     if region_mode:
         #TODO
         button.text = "region on"
         button.color = GREEN
-        pass
+
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                for agent in market_list[row][column].agents:
+                    agent.region = market_list[row][column].region
+
+
     else:
         button.text = "region off"
         button.color = RED
 
         #Do borders by market? would use less memory compared to by agents
-        new_region = pygame.Rect(SINGLE_MARKET_BORDER)
+        new_region = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),1,1,settings["space"])[0][0]
+        #new_region = pygame.Rect(SINGLE_MARKET_BORDER)
 
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 for agent in market_list[row][column].agents:
                     agent.region = new_region
+
                 #market_list[row][column].region = SINGLE_MARKET_BORDER
 
 
@@ -384,6 +396,7 @@ def move_agents():
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
+                #agent.print_info()
                 for other_agent in get_nearby_agents(r,c):
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
@@ -398,9 +411,9 @@ def move_agents():
                         break
                 find_new_box(agent)
             i+=1
-            print("Market number",i)
-            print("Price: ",market_list[row][column].get_price())
-            print("")
+            #print("Market number",i)
+            #print("Price: ",market_list[row][column].get_price())
+            #print("")
 
 def get_utility():
     global market_list
@@ -450,7 +463,7 @@ def new_agent_in_region(Display,region):
 
         if not on_top_of_other_agent(agent):
             agent.draw()
-            initial_utility += agent.get_utility()
+            initial_utility += agent.get_utility_cobb_douglass()
             find_new_box(agent)
             num_agents += 1
 
@@ -693,6 +706,8 @@ def main():
                 x += 50
 
 
+        u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
+        Display.blit(u,(1000,750))
 
         #60 Frames per second
         clock.tick(60)
