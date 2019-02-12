@@ -1,6 +1,6 @@
 
 from ColorDefinitions import *
-
+from sympy import Symbol, solve
 
 class Market:
 
@@ -10,6 +10,7 @@ class Market:
         self.is_selected = False
         self.region = region
         self.price = 0
+        self.price_oranges = 0
         self.num_trades = 1
         self.agents = []
 
@@ -21,12 +22,22 @@ class Market:
 
 
     def trade(self,agent,other_agent,num_goods_to_trade,show_trade):
-        self.num_trades += 1
-        #print()
-        #self.print_info()
-        #other_agent.print_info()
 
-        traded = self.cobb_douglass_trade(agent,other_agent,num_goods_to_trade)
+        before_trade_utility_agent = agent.get_utility_cobb_douglass()
+        before_trade_utility_other_agent = other_agent.get_utility_cobb_douglass()
+
+
+        traded = self.cobb_douglass_trade(agent,other_agent)
+
+        if agent.get_utility_cobb_douglass() <before_trade_utility_agent:
+            print("MATH ERROR, agent")
+            print("after",agent.get_utility_cobb_douglass())
+            print("before",before_trade_utility_agent)
+
+        if other_agent.get_utility_cobb_douglass() <before_trade_utility_other_agent:
+            print("MATH ERROR, other agent")
+            print("after",other_agent.get_utility_cobb_douglass())
+
         if show_trade:
             if traded:
                 agent.color=LIME_GREEN
@@ -38,79 +49,63 @@ class Market:
                 other_agent.color=RED
 
 
-
-    def cobb_douglass_trade(self, agent, other_agent, num_goods_to_trade):
-        """
-        print(agent.id," is willing to give up ",self.get_mrs_apples(agent),
-        " apples for ",self.get_mrs_oranges(agent),"oranges")
-        agent.print_info()
-        print()
-
-
-        print(other_agent.id," is willing to give up ",self.get_mrs_apples(other_agent),
-        " apples for ",self.get_mrs_oranges(other_agent),"oranges")
-        other_agent.print_info()
-        """
-
-        price = self.get_mrs_apples(other_agent)
-
+    #always trade 1 apple
+    def cobb_douglass_trade(self, agent, other_agent):
         #Agent want apples more than other agent
-        if self.get_mrs_apples(agent) > price:
-            price = self.get_mrs_apples(other_agent) * num_goods_to_trade
+        if self.get_mrs_apples(agent) > self.get_mrs_oranges(other_agent):
+            return self.trade_apple_for_oranges(agent, other_agent)
 
-            #one of the agents does not have enough goods to trade
-            if other_agent.apples-num_goods_to_trade <0 or agent.oranges-price <0:
-                return False
+        return self.trade_apple_for_oranges(other_agent, agent)
 
 
-
-            agent.apples+=num_goods_to_trade
-            other_agent.apples-=num_goods_to_trade
-
-            agent.oranges-=price
-            other_agent.oranges+=price
-
-            self.price += price/num_goods_to_trade
-            """
-            print(agent.id," is willing to give up ",self.get_mrs_apples(agent),
-            " apples for ",self.get_mrs_oranges(agent),"oranges")
-            agent.print_info()
-            print()
-
-
-            print(other_agent.id," is willing to give up ",self.get_mrs_apples(other_agent),
-            " apples for ",self.get_mrs_oranges(other_agent),"oranges")
-            other_agent.print_info()
-            """
-            return True
-
-        elif not price == self.get_mrs_apples(agent):
-            price=self.get_mrs_oranges(other_agent) * num_goods_to_trade
-
-            if agent.apples-price <0 or other_agent.oranges-num_goods_to_trade <0:
-                return False
-
-            agent.apples-=price
-            other_agent.apples+=price
-
-            agent.oranges+=num_goods_to_trade
-            other_agent.oranges-=num_goods_to_trade
-
-            self.price += num_goods_to_trade/price
-            return True
-        return False
 
     #cobb_douglass
+    def trade_apple_for_oranges(self, agent, other_agent):
+        price = 0
+        agent_old_utility = agent.get_utility_cobb_douglass()
+        other_agent_old_utillity = other_agent.get_utility_cobb_douglass()
+        other_agent.apples -= 1
+        agent.apples += 1
+
+        def reset():
+            other_agent.apples += 1
+            agent.apples -= 1
+            other_agent.oranges -= price
+
+        #Use do-while loop???
+        while other_agent.get_utility_cobb_douglass() < other_agent_old_utillity:
+            price += 1
+            other_agent.oranges += 1
+            if agent.oranges -price < 0:
+                #agent does not have enough oranges to trade
+                reset()
+                return False
+
+        agent.oranges -= price
+
+
+        if agent_old_utility < agent.get_utility_cobb_douglass():
+            self.price += price
+            self.num_trades += 1
+            return True
+        #There is no price where both agents are no worse of
+        agent.oranges += price
+        reset()
+        return False
+
+    #this is the correct mrs
     def get_mrs_apples(self,agent):
         try:
-            return agent.pref_apples/agent.pref_oranges * agent.oranges/agent.apples
+            return (agent.pref_apples * agent.oranges) / (agent.pref_oranges * agent.apples)
         except ZeroDivisionError:
+            print("Can't devide by 0")
             agent.print_info()
     #cobb_douglass
     def get_mrs_oranges(self,agent):
         try:
-            return agent.pref_oranges/agent.pref_apples * agent.apples/agent.oranges
+            return (agent.pref_oranges * agent.apples) /(agent.pref_apples * agent.oranges)
         except ZeroDivisionError:
+            print("Can't devide by 0")
             agent.print_info()
 
 

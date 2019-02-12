@@ -25,19 +25,21 @@ class Agent:
     def update_color(self):
         scaler=self.apples/(self.apples+self.oranges)
         r=0
-        g=int(255*(max(0,1-scaler)))
+        g=int(255*(1-scaler))
         b=255
         self.color=(r,g,b)
 
 
     def create_goods(self):
-        self.apples = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
+        #self.apples = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
         #self.pref_apples = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
 
-        self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
+        #self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
         #self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
+        self.apples = 100
+        self.oranges = 100
 
-        self.pref_apples = random.randint(1,99)/100
+        self.pref_apples = float(random.randint(1,9)) / 10
         self.pref_oranges = 1-self.pref_apples
 
 
@@ -89,7 +91,7 @@ class Agent:
         other_agent.change_x=-self.change_x
         other_agent.change_y=-self.change_y
 
-        self.move_away_from_edge()
+        #self.move_away_from_edge()
         other_agent.move_away_from_edge()
 
 
@@ -150,7 +152,7 @@ class Agent:
             other_agent.oranges-=num_goods_to_trade
 
         return True
-
+    """
     #Currently not in use
     def middle_trade(self,other_agent,num_goods_to_trade):
         if margin_trade(self,other_agent,num_goods_to_trade/2):
@@ -161,7 +163,7 @@ class Agent:
             other_agent.color=LIME_GREEN
         else:
             other_agent.color=RED
-
+    """
 
     def marginal_rate_of_substitution(self):
         return self.pref_apples/self.pref_oranges
@@ -169,12 +171,13 @@ class Agent:
     def marginal_rate_of_substitution_reverse(self):
         return self.pref_oranges/self.pref_apples
 
-
+    """
     #linear, this can be a single return statement
     def get_utility(self):
         utility = 0
         utility += self.pref_apples*self.apples + self.pref_oranges*self.oranges
         return utility
+    """
 
     def get_utility_cobb_douglass(self):
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
@@ -184,7 +187,7 @@ class Agent:
     def print_info(self):
         print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
         print(" agent",self.id," pref_apples:",self.pref_apples ," pref_oranges:",self.pref_oranges)
-        print(" agent",self.id," utility ",self.get_utility())
+        print(" agent",self.id," utility ",self.get_utility_cobb_douglass())
 
     def move(self):
         self.update_color()
@@ -196,13 +199,23 @@ class Agent:
         self.y += self.change_y
 
         #Stay in bounds
-        if self.y > self.region.bottom - self.radius or self.y < self.radius+self.region.top:
-            self.change_y = -self.change_y
+        if self.y > self.region.bottom - self.radius:
+            self.change_y = -abs(self.change_y)
             self.y += self.change_y
             self.on_edge_y=True
 
-        elif self.x > self.region.right-self.radius or self.x < self.radius+self.region.left:
-            self.change_x = -self.change_x
+        elif self.y < self.radius+self.region.top:
+            self.change_y = abs(self.change_y)
+            self.y += self.change_y
+            self.on_edge_y=True
+
+        if self.x > self.region.right-self.radius:
+            self.change_x = -abs(self.change_x)
+            self.x += self.change_x
+            self.on_edge_x=True
+
+        elif self.x < self.radius+self.region.left:
+            self.change_x = abs(self.change_x)
             self.x += self.change_x
             self.on_edge_x=True
 
