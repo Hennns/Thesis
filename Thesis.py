@@ -10,6 +10,7 @@ cobb duglas utility
 import pygame
 import random
 import numpy as np
+import pickle
 from collections import deque
 import datetime
 
@@ -66,7 +67,7 @@ HEIGHT =800
 TITLE="Title"
 INFO_WIDTH=400
 
-BUTTON_WIDTH = 100
+BUTTON_WIDTH = 110
 BUTTON_HEIGHT = 60
 BUTTON_X = 20
 BUTTON_Y = 20
@@ -127,7 +128,8 @@ box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
-
+def save_function(button):
+    pass
 
 def settings_function(button):
     global change_settings
@@ -260,7 +262,7 @@ def get_box(agent):
     #This should never happen
     print("box not found")
 
-
+#This can use marets to only seach in the current market if regions are on
 def get_nearby_agents(current_r,current_c):
     global box_tracker
     nearby_agents = []
@@ -467,6 +469,9 @@ def new_agent_in_region(Display,region):
             find_new_box(agent)
             num_agents += 1
 
+        #draw the agent on top if it cannot be place other ways?
+        #make that a setting?
+
             return agent
 
     return None
@@ -502,9 +507,10 @@ def initalize_button_list(Display):
     reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
     #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
-    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"region on",small_text,Display,region_function)
+    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Region on",small_text,Display,region_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
-    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"screenshot",small_text,Display,screenshot_function)
+    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,Display,screenshot_function)
+    save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,Display,save_function)
 
     button_list.append(reset_button)
     button_list.append(pause_button)
@@ -512,6 +518,7 @@ def initalize_button_list(Display):
     button_list.append(region_button)
     button_list.append(settings_button)
     button_list.append(screenshot_button)
+    button_list.append(save_button)
 
 def create_setting_box(name,rect):
     box = TextBox.TextBox(rect)
@@ -587,6 +594,9 @@ def main():
     initalize_button_list(Display)
 
     run = True
+    #https://stackoverflow.com/questions/21274898/python-getting-meaningful-results-from-cprofile
+    pr = cProfile.Profile()
+    pr.enable()
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -716,9 +726,14 @@ def main():
         pygame.display.flip()
 
 
+    pr.disable()
+    pr.print_stats(sort='time')
     #end of loop we exit
     pygame.quit()
 
 
 if __name__ == "__main__":
+    #https://docs.python.org/2/library/profile.html
+    import cProfile
+    #cProfile.run('main()')
     main()

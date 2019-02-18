@@ -9,7 +9,7 @@ class button:
 
     def __init__(self,x,y,color,text,font,display,function):
         pygame.init()
-        self.width=100
+        self.width=110
         self.heigth=60
         self.x=x
         self.y=y
