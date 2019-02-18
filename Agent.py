@@ -36,8 +36,8 @@ class Agent:
 
         #self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
         #self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
-        self.apples = 100
-        self.oranges = 100
+        self.apples = 50
+        self.oranges = 50
 
         self.pref_apples = float(random.randint(1,9)) / 10
         self.pref_oranges = 1-self.pref_apples
@@ -180,6 +180,9 @@ class Agent:
     """
 
     def get_utility_cobb_douglass(self):
+        #this becomes a complex number
+        if isinstance( self.apples ** self.pref_apples + self.oranges ** self.pref_oranges, complex):
+            self.print_info()
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
 
 
@@ -220,13 +223,25 @@ class Agent:
             self.on_edge_x=True
 
 
+
+
+
     def collision(self,other_agent):
+        if self.returning_to_market():
+            return False
+
         #http://cgp.wikidot.com/circle-to-circle-collision-detection
         dx=self.x-other_agent.x
         dy=self.y-other_agent.y
         r=self.radius+self.radius
         if(dx*dx)+(dy*dy)<r*r:
             return True
+        return False
+
+
+    #TODO
+    def returning_to_market(self):
+        ##Add code here
         return False
 
     def is_point_over_agent(self,point):

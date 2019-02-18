@@ -29,6 +29,8 @@ class Market:
 
         traded = self.cobb_douglass_trade(agent,other_agent)
 
+
+
         if agent.get_utility_cobb_douglass() <before_trade_utility_agent:
             print("MATH ERROR, agent")
             print("after",agent.get_utility_cobb_douglass())
@@ -51,16 +53,28 @@ class Market:
 
     #always trade 1 apple
     def cobb_douglass_trade(self, agent, other_agent):
-        #Agent want apples more than other agent
-        if self.get_mrs_apples(agent) > self.get_mrs_oranges(other_agent):
-            return self.trade_apple_for_oranges(agent, other_agent)
+        mrs_agent = self.get_mrs_apples(agent)
+        mrs_other_agent = self.get_mrs_apples(other_agent)
 
+
+        #Agent want apples more than other agent
+        #if self.get_mrs_apples(agent) > self.get_mrs_oranges(other_agent):
+        if mrs_agent > mrs_other_agent:
+            return self.trade_apple_for_oranges(agent, other_agent)
+        if mrs_agent == mrs_other_agent:
+            return False
+
+        #other_agent want apples more than agent
         return self.trade_apple_for_oranges(other_agent, agent)
 
 
 
     #cobb_douglass
     def trade_apple_for_oranges(self, agent, other_agent):
+        #Can't trade of the other agent cannot give away 1 apple
+        if other_agent.apples < 1:
+            return False
+
         price = 0
         agent_old_utility = agent.get_utility_cobb_douglass()
         other_agent_old_utillity = other_agent.get_utility_cobb_douglass()
@@ -93,20 +107,25 @@ class Market:
         reset()
         return False
 
-    #this is the correct mrs
+#Is try except the best approach here?
+
+    #Number of oranges willing to trade for 1 apple
     def get_mrs_apples(self,agent):
         try:
             return (agent.pref_apples * agent.oranges) / (agent.pref_oranges * agent.apples)
         except ZeroDivisionError:
-            print("Can't devide by 0")
-            agent.print_info()
-    #cobb_douglass
+            #print("Can't devide by 0")
+            #agent.print_info()
+            return 0
+
+    #number of apples willing to trade for 1 orange
     def get_mrs_oranges(self,agent):
         try:
             return (agent.pref_oranges * agent.apples) /(agent.pref_apples * agent.oranges)
         except ZeroDivisionError:
-            print("Can't devide by 0")
-            agent.print_info()
+            #print("Can't devide by 0")
+            #agent.print_info()
+            return 0
 
 
     def get_utility(self):
