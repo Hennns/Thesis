@@ -29,21 +29,6 @@ class Agent:
         b=255
         self.color=(r,g,b)
 
-
-    def create_goods(self):
-        #self.apples = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
-        #self.pref_apples = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
-
-        #self.oranges = random.randint(INITIAL_MIN_NUM_GOODS/2,INITIAL_MAX_NUM_GOODS/2)*2
-        #self.pref_oranges = random.randint(INITIAL_MIN_PREFERENCE/2,INITIAL_MAX_PREFERENCE/2)*2
-        self.apples = 50
-        self.oranges = 50
-
-        self.pref_apples = float(random.randint(1,9)) / 10
-        self.pref_oranges = 1-self.pref_apples
-
-
-
     #Initialize variables
     def __init__(self,region,display,ID,radius):
         self.display = display
@@ -53,10 +38,11 @@ class Agent:
         self.color = BLUE
         self.radius =radius
         self.is_selected = False
-        self.apples = 0
-        self.oranges = 0
-        self.pref_apples = 0
-        self.pref_oranges = 0
+        self.apples = 100
+        self.oranges = 100
+
+        self.pref_apples = float(random.randint(1,9)) / 10
+        self.pref_oranges = 1-self.pref_apples
 
 
         self.box = (0,0)
@@ -71,8 +57,6 @@ class Agent:
         self.change_x = math.cos(angle)*SPEED
         self.change_y = math.sin(angle)*SPEED
 
-
-        self.create_goods()
         self.update_color()
 
     def bounce(self,other_agent):
@@ -225,10 +209,10 @@ class Agent:
 
 
 
-
+    #Dont collide when on way back to its market
     def collision(self,other_agent):
-        if self.returning_to_market():
-            return False
+        #if self.returning_to_market():
+        #    return False
 
         #http://cgp.wikidot.com/circle-to-circle-collision-detection
         dx=self.x-other_agent.x
