@@ -1,16 +1,12 @@
 
 # In[1]:
 
-
-"""TODO:
-cobb duglas utility
-"""
-
-
 import pygame
 import random
 import numpy as np
 import pickle
+import cProfile
+#https://docs.python.org/2/library/profile.html
 from collections import deque
 import datetime
 
@@ -38,7 +34,6 @@ from ColorDefinitions import *
 #https://pythonprogramming.net/pygame-python-3-part-1-intro/
 
 #Global things
-#agent_list = []
 market_list = [[]]
 button_list = []
 setting_box_list=[]
@@ -97,6 +92,7 @@ utility_grapher = deque(maxlen=INFO_WIDTH)
 utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
+pr = cProfile.Profile()
 
 #split a pygame.Rect into many smaller pygame.Rect
 def divide_rect(rectangle,rows,columns,space):
@@ -115,14 +111,13 @@ def divide_rect(rectangle,rows,columns,space):
     return r_list
 
 #Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS=16
-BIN_NUM_COLUMNS=16
+BIN_NUM_ROWS=20
+BIN_NUM_COLUMNS=20
 
 BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
 
 #each row+colum represents a box and contains a list of agents in that box
 box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
-
 
 
 
@@ -204,7 +199,7 @@ def region_function(button):
 
     if region_mode:
         #TODO
-        button.text = "region on"
+        button.text = "borders on"
         button.color = GREEN
 
         for row in range(len(market_list)):
@@ -214,7 +209,7 @@ def region_function(button):
 
 
     else:
-        button.text = "region off"
+        button.text = "borders off"
         button.color = RED
 
         #Do borders by market? would use less memory compared to by agents
@@ -253,16 +248,24 @@ def clear():
     utility_grapher.clear()
     market_list = [[]]
 
-def get_box(agent):
+#If the current box is unknown, finds the correct box
+def set_box(agent):
     x,y = agent.get_location()
     for row in range(len(BOX_MAP)):
         for col in range(len(BOX_MAP[row])):
             if BOX_MAP[row][col].collidepoint(x,y):
                 return (row,col)
+
     #This should never happen
+    for row in range(len(BOX_MAP)):
+        for col in range(len(BOX_MAP[row])):
+            print(BOX_MAP[row][col])
+    print(x)
+    print(y)
     print("box not found")
 
-#This can use marets to only seach in the current market if regions are on
+#This can use markets to only search in the current market if regions are on
+#speed up this function!
 def get_nearby_agents(current_r,current_c):
     global box_tracker
     nearby_agents = []
@@ -274,7 +277,7 @@ def get_nearby_agents(current_r,current_c):
                 continue
     return nearby_agents
 
-#delete this function?
+
 #can use same logic as function above
 def get_nearby_boxes(current_r,current_c):
     nearby_boxes = []
@@ -287,8 +290,8 @@ def get_nearby_boxes(current_r,current_c):
 
 
 #thie needs some clean up!! idea is to use direction of agent to speed up calculations
+#finds the new box based on the previous box
 def find_new_box(agent):
-
     global box_tracker
 
     r,c=agent.box
@@ -296,81 +299,12 @@ def find_new_box(agent):
 
     #Check the old box first, since the agent is most likely there
     if BOX_MAP[r][c].collidepoint(x,y):
-        box_tracker[r][c].append(agent)
-        return
-    """
-    if agent.change_x >0:
-        if r < BIN_NUM_ROWS:
-            if BOX_MAP[r+1][c].collidepoint(x,y):
-                box_tracker[r+1][c].append(agent)
-                agent.box=(r+1,c)
-                return
+       box_tracker[r][c].append(agent)
+       return
 
-            if agent.change_y>0:
-                if BOX_MAP[r][c+1].collidepoint(x,y):
-                    box_tracker[r][c+1].append(agent)
-                    agent.box=(r,c+1)
-                    return
-
-                if BOX_MAP[r+1][c+1].collidepoint(x,y):
-                    box_tracker[r+1][c+1].append(agent)
-                    agent.box=(r+1,c+1)
-                    return
-            else:
-                if BOX_MAP[r+1][c-1].collidepoint(x,y):
-                    box_tracker[r+1][c-1].append(agent)
-                    agent.box=(r+1,c-1)
-                    return
-
-                if BOX_MAP[r][c-1].collidepoint(x,y):
-                    box_tracker[r][c-1].append(agent)
-                    agent.box=(r,c-1)
-                    return
-        else:
-            if BOX_MAP[r][c+1].collidepoint(x,y):
-                box_tracker[r][c+1].append(agent)
-                agent.box=(r,c+1)
-                return
-            if BOX_MAP[r][c-1].collidepoint(x,y):
-                box_tracker[r][c-1].append(agent)
-                agent.box=(r,c-1)
-                return
-
-    if r > 0:
-        if BOX_MAP[r-1][c].collidepoint(x,y):
-            box_tracker[r-1][c].append(agent)
-            agent.box=(r-1,c)
-            return
-
-        if agent.change_y>0:
-            if BOX_MAP[r][c+1].collidepoint(x,y):
-                box_tracker[r][c+1].append(agent)
-                agent.box=(r,c+1)
-                return
-            if BOX_MAP[r-1][c+1].collidepoint(x,y):
-                box_tracker[r-1][c+1].append(agent)
-                agent.box=(r-1,c+1)
-                return
-        else:
-            if BOX_MAP[r][c-1].collidepoint(x,y):
-                box_tracker[r][c-1].append(agent)
-                agent.box=(r,c-1)
-                return
-            if BOX_MAP[r-1][c-1].collidepoint(x,y):
-                box_tracker[r-1][c-1].append(agent)
-                agent.box=(r-1,c-1)
-                return
-    if BOX_MAP[r][c-1].collidepoint(x,y):
-        box_tracker[r][c-1].append(agent)
-        agent.box=(r,c-1)
-        return
-
-    print("Math error")
-    print("r",r)
-    print("c",c)
-    """
 
     #Then check other nearby boxes
+    #the loop can be unrolled here
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
@@ -383,8 +317,12 @@ def find_new_box(agent):
 
 
 def move_agents():
+    global pr
     global box_tracker
     global market_list
+
+    pr.enable()
+
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
@@ -416,6 +354,7 @@ def move_agents():
             #print("Market number",i)
             #print("Price: ",market_list[row][column].get_price())
             #print("")
+    pr.disable()
 
 def get_utility():
     global market_list
@@ -447,7 +386,7 @@ def text_objects(text, font):
     return textSurface, textSurface.get_rect()
 
 def on_top_of_other_agent(agent):
-    r,c =agent.box
+    r,c = agent.box
     for other_agent in get_nearby_agents(r,c):
         if agent.collision(other_agent):
             #print("agent on top of other agent at spawn")
@@ -461,17 +400,17 @@ def new_agent_in_region(Display,region):
 
     for i in range(20):
         agent=Agent.Agent(region,Display,num_agents+1,settings["radius"])
-        agent.box = get_box(agent)
+        agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
+            find_new_box(agent)
             agent.draw()
             initial_utility += agent.get_utility_cobb_douglass()
-            find_new_box(agent)
             num_agents += 1
+
 
         #draw the agent on top if it cannot be place other ways?
         #make that a setting?
-
             return agent
 
     return None
@@ -595,8 +534,8 @@ def main():
 
     run = True
     #https://stackoverflow.com/questions/21274898/python-getting-meaningful-results-from-cprofile
-    pr = cProfile.Profile()
-    pr.enable()
+
+
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -726,14 +665,12 @@ def main():
         pygame.display.flip()
 
 
-    pr.disable()
+
     pr.print_stats(sort='time')
     #end of loop we exit
     pygame.quit()
 
 
 if __name__ == "__main__":
-    #https://docs.python.org/2/library/profile.html
-    import cProfile
-    #cProfile.run('main()')
+
     main()
