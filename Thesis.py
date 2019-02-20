@@ -36,21 +36,27 @@ from ColorDefinitions import *
 #Global things
 market_list = [[]]
 button_list = []
-setting_box_list=[]
+setting_box_list= []
+default_box_list = []
 wait = True
-change_settings = False
+change_simulation_settings = False
+change_market_settings = False
 
-#move region_mode into settings?
+#move region_mode into settings? TODO
 region_mode = True
 
-
 settings = {
-            "radius" : 10,
-            "perfect_substitutes": True,
-            "show trade": 0, #aka False
+
             "rows": 1,
             "columns": 1,
             "space": 20,
+
+            }
+
+defaults = {
+            "radius" : 10,
+            "perfect_substitutes": 0,
+            "show trade": 0,
             "random_num_goods": True,
             "cobb_douglass": 1
             }
@@ -126,42 +132,78 @@ box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 def save_function(button):
     pass
 
-def settings_function(button):
-    global change_settings
+def market_settings_function(button):
+    global change_market_settings
     global button_list
     global market_list
+    global default_box_list
 
-    #global setting_box_list
-    change_settings = not change_settings
+    change_market_settings = not change_market_settings
     button.Display.fill(WHITE)
 
     button_list=[]
-    if change_settings:
-        button.text = "Save"
+    if change_market_settings:
+        button.text = "Apply"
+        button.x = BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
+        button_list.append(button)
+        button_list.append(return_button)
+
+    else:
+        num_markets_selected = 0
+        draw_agents()
+        initalize_button_list(button.Display)
+
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                if market_list[row][column].is_selected:
+                    num_markets_selected += 1
+        #If no market is selected then we update the settings of every market
+        #Can this be a true/false value? should it be? TODO
+        if num_markets_selected == 0:
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    for input_box in default_box_list:
+                        #print("updating settings in market",row,column)
+                        market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
+        #else update only the settings of the selected markets
+        else:
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    if market_list[row][column].is_selected:
+                        for input_box in default_box_list:
+                            #print("updating settings in market",row,column)
+                            market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
+
+
+def settings_function(button):
+    global change_simulation_settings
+    global button_list
+    global market_list
+    global setting_box_list
+
+    change_simulation_settings = not change_simulation_settings
+    button.Display.fill(WHITE)
+
+    button_list=[]
+    if change_simulation_settings:
+        button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
         button_list.append(button)
         button_list.append(return_button)
 
 
     else:
-        no_market_selected = True
         draw_agents()
         initalize_button_list(button.Display)
-        for row in range(len(market_list)):
-            for column in range(len(market_list[row])):
-                if market_list[row][column].is_selected:
-                    no_market_selected = False
-                    for input_box in setting_box_list:
-                        print("updating settings in market",row,column)
-                        market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
 
-        if no_market_selected:
-            print("updating default settings")
-            for input_box in setting_box_list:
-                settings[input_box.name]=input_box.get_input_as_int()
-            #update markets, if row/columns have changed
-            #todo for now this is temporarily and it will clear all market data
-            initialize_market()
+
+        print("updating simulation settings")
+        for input_box in setting_box_list:
+            settings[input_box.name]=input_box.get_input_as_int()
+        #update markets, if row/columns have changed
+        #todo for now this is temporarily and it will clear all market data
+        initialize_market()
 
 def reset_function(button):
     clear()
@@ -169,20 +211,26 @@ def reset_function(button):
     initialize_market()
 
 def return_function(button):
-    global change_settings
+    global change_simulation_settings
+    global change_market_settings
     global button_list
-    change_settings = False
+    global setting_box_list
+
+    change_simulation_settings = False
+    change_market_settings = False
     button_list=[]
     initalize_button_list(button.Display)
     button.Display.fill(WHITE)
     draw_agents()
     draw_utility_graph(button.Display)
 
+    #what does this do? should i add the same for market_settings??
     for box in setting_box_list:
         try:
             box.buffer = [str(i) for i in str(settings[box.name])]
         except KeyError:
-            print("no key for setting_box")
+            print("no key for setting_box",box.name)
+            print(box)
             continue
 
 
@@ -469,6 +517,7 @@ def initalize_button_list(Display):
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
     screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,Display,screenshot_function)
     save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,Display,save_function)
+    market_settings_button = Button.button(BUTTON_X+8*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"M Settings",small_text,Display,market_settings_function)
 
     button_list.append(reset_button)
     button_list.append(pause_button)
@@ -477,42 +526,53 @@ def initalize_button_list(Display):
     button_list.append(settings_button)
     button_list.append(screenshot_button)
     button_list.append(save_button)
+    button_list.append(market_settings_button)
 
-def create_setting_box(name,rect):
+def create_input_box(name,rect,default_setting):
+
     box = TextBox.TextBox(rect)
     box.name = name
     try:
-        box.buffer = [str(i) for i in str(settings[box.name])]
+        box.buffer = [str(i) for i in str(default_setting[box.name])]
     except KeyError:
         print("no key for setting box")
         pass
 
     return box
 
+def initialize_defaults_box_list():
+    global default_box_list
+    global defaults
+
+    set_radius = create_input_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_utiltty_function = create_input_box("cobb_douglass",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+
+    default_box_list.append(set_radius)
+    default_box_list.append(set_trade)
+    default_box_list.append(set_utiltty_function)
 
 def initialize_setting_box_list():
-    set_radius = create_setting_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_rows = create_setting_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_columns = create_setting_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_trade = create_setting_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+4*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
-    set_utiltty_function = create_setting_box("cobb_douglass",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+5*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT))
+    global setting_box_list
+    global settings
 
-    setting_box_list.append(set_radius)
+    set_rows = create_input_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
+    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
+
     setting_box_list.append(set_columns)
     setting_box_list.append(set_rows)
-    setting_box_list.append(set_trade)
-    setting_box_list.append(set_utiltty_function)
 
 
 def initialize_market():
     global market_list
     global settings
+    global defaults
 
     r=settings["rows"]
     c=settings["columns"]
     s=settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-    market_list = [[Market.Market(agent_regions[row][column],BLACK,settings) for row in range(r)] for column in range(c)]
+    market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
 
 def market_clicked(market, mouse):
     global wait
@@ -536,7 +596,8 @@ def market_clicked(market, mouse):
 
 def main():
     global wait
-    global change_settings
+    global change_simulation_settings
+    global change_market_settings
     global setting_box_list
     global region_mode #Don't need this to be a global variable
     global market_list
@@ -552,6 +613,7 @@ def main():
 
     initialize_market()
     initialize_setting_box_list()
+    initialize_defaults_box_list()
     initalize_button_list(Display)
 
 
@@ -563,7 +625,7 @@ def main():
             #https://www.pygame.org/docs/ref/key.html
             elif event.type == pygame.KEYDOWN:
 
-                #Make one new agents by pressing space
+                #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
                     create_many_agents(Display,1)
 
@@ -585,7 +647,7 @@ def main():
                         text.buffer.append(event.unicode)
 
 
-                elif change_settings:
+                elif change_simulation_settings:
                     for input_box in setting_box_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
@@ -600,6 +662,22 @@ def main():
                             elif event.unicode in input_box.ACCEPTED:
                                 input_box.buffer.append(event.unicode)
                             break
+                elif change_market_settings:
+                    for input_box in default_box_list:
+                        if input_box.active:
+                            if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                                input_box.active= False
+
+                            #Delete last input
+                            if event.key == pygame.K_BACKSPACE:
+                                if input_box.buffer:
+                                    input_box.buffer.pop()
+                            #only allow valid input for this setting
+                            elif event.unicode in input_box.ACCEPTED:
+                                input_box.buffer.append(event.unicode)
+                            break
+
+
 
             #left mouse click
             elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
@@ -614,10 +692,14 @@ def main():
                         b.execute()
                         break
 
-                #if chaninging settings, update if a setting box is active
-                if change_settings:
-                    for setting_box in setting_box_list:
-                        setting_box.active=setting_box.rect.collidepoint(mouse)
+                #if chaninging simulation settings, update if a input box is active
+                if change_market_settings:
+                    for input_box in default_box_list:
+                        input_box.active = input_box.rect.collidepoint(mouse)
+                #if chaninging market settings, update if a input box is active
+                elif change_simulation_settings:
+                    for input_box in setting_box_list:
+                        input_box.active = input_box.rect.collidepoint(mouse)
 
                 #if the mouse is above the input box it is not above anything else
                 elif not text.active:
@@ -629,8 +711,18 @@ def main():
                                 market_clicked(market_list[row][column], mouse)
                                 break
 
-        if change_settings:
+        if change_simulation_settings:
             for input_box in setting_box_list:
+                input_box.update()
+                input_box.draw(Display)
+
+                textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
+                textRect.midright = input_box.rect.midleft
+                textRect.x -= 5
+                Display.blit(textSurf, textRect)
+
+        elif change_market_settings:
+            for input_box in default_box_list:
                 input_box.update()
                 input_box.draw(Display)
 
