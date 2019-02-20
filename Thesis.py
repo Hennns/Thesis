@@ -129,6 +129,8 @@ def save_function(button):
 def settings_function(button):
     global change_settings
     global button_list
+    global market_list
+
     #global setting_box_list
     change_settings = not change_settings
     button.Display.fill(WHITE)
@@ -142,15 +144,24 @@ def settings_function(button):
 
 
     else:
-        #clear()
+        no_market_selected = True
         draw_agents()
         initalize_button_list(button.Display)
-        for input_box in setting_box_list:
-            settings[input_box.name]=input_box.get_input_as_int()
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                if market_list[row][column].is_selected:
+                    no_market_selected = False
+                    for input_box in setting_box_list:
+                        print("updating settings in market",row,column)
+                        market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
 
-        #update markets, if row/columns have changed
-        #todo for now this is temporarily and it will clear all market data
-        initialize_market()
+        if no_market_selected:
+            print("updating default settings")
+            for input_box in setting_box_list:
+                settings[input_box.name]=input_box.get_input_as_int()
+            #update markets, if row/columns have changed
+            #todo for now this is temporarily and it will clear all market data
+            initialize_market()
 
 def reset_function(button):
     clear()
@@ -333,6 +344,7 @@ def move_agents():
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
             market_list[row][column].num_trades = 1
+            show_trade = market_list[row][column].settings["show trade"]
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
@@ -343,9 +355,9 @@ def move_agents():
 
                         if random.getrandbits(1):
                             #other_agent.trade(agent,num_goods_to_trade,settings["show trade"])
-                            market_list[row][column].trade(agent, other_agent, num_goods_to_trade,settings["show trade"])
+                            market_list[row][column].trade(agent, other_agent, num_goods_to_trade,show_trade)
                         else:
-                            market_list[row][column].trade(other_agent, agent, num_goods_to_trade,settings["show trade"])
+                            market_list[row][column].trade(other_agent, agent, num_goods_to_trade,show_trade)
                             #agent.trade(other_agent,num_goods_to_trade,settings["show trade"])
                         #print_total_utility()
                         break
@@ -394,12 +406,12 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(Display,region):
+def new_agent_in_region(Display,region,radius):
     global initial_utility
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,Display,num_agents+1,settings["radius"])
+        agent=Agent.Agent(region,Display,num_agents+1,radius)
         agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
@@ -420,12 +432,19 @@ def create_many_agents(Display, num):
     global num_agents
     global market_list
 
+
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
+            region = market_list[row][column].region
+            radius = market_list[row][column].settings["radius"]
             for i in range(num):
-                agent = new_agent_in_region(Display,market_list[row][column].region)
+                agent = new_agent_in_region(Display,region,radius)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
+                    if not radius == agent.radius:
+                        print("radius should be:",radius)
+                        print("radius is ",agent.radius)
+                        print("market",row,column)
 
 
     print(num_agents," number agents")
@@ -487,18 +506,21 @@ def initialize_setting_box_list():
 
 def initialize_market():
     global market_list
+    global settings
 
     r=settings["rows"]
     c=settings["columns"]
     s=settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-    market_list = [[Market.Market(agent_regions[row][column],BLACK) for row in range(r)] for column in range(c)]
+    market_list = [[Market.Market(agent_regions[row][column],BLACK,settings) for row in range(r)] for column in range(c)]
 
 def market_clicked(market, mouse):
     global wait
+
     for agent in market.agents:
         if agent.is_point_over_agent(mouse):
             agent.is_selected = not agent.is_selected
+            #If the simulation is paused the agents need to be re_drawn
             if wait:
                 if agent.is_selected:
                     agent.draw()
@@ -509,7 +531,8 @@ def market_clicked(market, mouse):
     market.is_selected = not market.is_selected
     if market.is_selected:
         market.color = YELLOW
-    else: market.color = BLACK
+    else:
+        market.color = BLACK
 
 def main():
     global wait
@@ -520,22 +543,19 @@ def main():
 
     pygame.init()
     Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
-    #Display = pygame.display.set_mode((1920,1080),pygame.HWSURFACE|pygame.FULLSCREEN)
     Display.fill(WHITE)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
-
     font = pygame.font.Font(None, 30)
+
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
     initialize_market()
     initialize_setting_box_list()
     initalize_button_list(Display)
 
+
     run = True
-    #https://stackoverflow.com/questions/21274898/python-getting-meaningful-results-from-cprofile
-
-
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -543,7 +563,7 @@ def main():
             #https://www.pygame.org/docs/ref/key.html
             elif event.type == pygame.KEYDOWN:
 
-                #Make new agents by pressing space
+                #Make one new agents by pressing space
                 if event.key == pygame.K_SPACE:
                     create_many_agents(Display,1)
 
@@ -596,8 +616,8 @@ def main():
 
                 #if chaninging settings, update if a setting box is active
                 if change_settings:
-                        for setting_box in setting_box_list:
-                            setting_box.active=setting_box.rect.collidepoint(mouse)
+                    for setting_box in setting_box_list:
+                        setting_box.active=setting_box.rect.collidepoint(mouse)
 
                 #if the mouse is above the input box it is not above anything else
                 elif not text.active:

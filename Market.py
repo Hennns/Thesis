@@ -5,7 +5,7 @@ from sympy import Symbol, solve
 class Market:
 
 
-    def __init__(self,region,color):
+    def __init__(self,region,color,settings):
         self.color = color
         self.is_selected = False
         self.region = region
@@ -13,6 +13,9 @@ class Market:
         self.price_oranges = 0
         self.num_trades = 1
         self.agents = []
+        self.settings = settings.copy()
+        #need to use copy since settings is just the defualts settings and we
+        #do not want to change defaults when changeing the settings in a market
 
 
     def get_price(self):
