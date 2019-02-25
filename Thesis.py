@@ -46,26 +46,27 @@ change_market_settings = False
 region_mode = True
 
 settings = {
-
             "rows": 1,
             "columns": 1,
             "space": 20,
-
             }
 
 defaults = {
             "radius" : 10,
-            "perfect_substitutes": 0,
             "show trade": 0,
             "random_num_goods": True,
-            "cobb_douglass": 1
+            "preference": "linear"
             }
+
+#possible preferences:
+#normal (cobb)
+#Perfect Substitutes (linear)
 
 
 # In[2]:
 WIDTH= 1200
 HEIGHT =800
-TITLE="Title"
+TITLE="Exchange Economy Simulation"
 INFO_WIDTH=400
 
 BUTTON_WIDTH = 110
@@ -86,8 +87,6 @@ region_height = BOTTOM_BORDER-TOP_BORDER
 SINGLE_MARKET_BORDER = (LEFT_BORDER,TOP_BORDER,region_width,region_height)
 
 
-
-num_goods_to_trade = 1
 num_agents = 0
 
 #Documnetation for deque
@@ -165,7 +164,11 @@ def market_settings_function(button):
                 for column in range(len(market_list[row])):
                     for input_box in default_box_list:
                         #print("updating settings in market",row,column)
-                        market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
+                        market_list[row][column].settings[input_box.name]=input_box.get_input()
+                        #maybe not best way to do it
+                        if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
+                            for agent in market_list[row][column].agents:
+                                agent.preference = market_list[row][column].settings["preference"]
         #else update only the settings of the selected markets
         else:
             for row in range(len(market_list)):
@@ -173,7 +176,13 @@ def market_settings_function(button):
                     if market_list[row][column].is_selected:
                         for input_box in default_box_list:
                             #print("updating settings in market",row,column)
-                            market_list[row][column].settings[input_box.name]=input_box.get_input_as_int()
+                            market_list[row][column].settings[input_box.name] = input_box.get_input()
+                            #maybe not best way to do it
+                            if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
+                                for agent in market_list[row][column].agents:
+                                    agent.preference = market_list[row][column].settings["preference"]
+                                print("updated market",row,column)
+
 
 
 def settings_function(button):
@@ -200,7 +209,7 @@ def settings_function(button):
 
         print("updating simulation settings")
         for input_box in setting_box_list:
-            settings[input_box.name]=input_box.get_input_as_int()
+            settings[input_box.name] = input_box.get_input()
         #update markets, if row/columns have changed
         #todo for now this is temporarily and it will clear all market data
         initialize_market()
@@ -392,7 +401,7 @@ def move_agents():
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
             market_list[row][column].num_trades = 1
-            show_trade = market_list[row][column].settings["show trade"]
+
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
@@ -402,11 +411,10 @@ def move_agents():
                         agent.bounce(other_agent)
 
                         if random.getrandbits(1):
-                            #other_agent.trade(agent,num_goods_to_trade,settings["show trade"])
-                            market_list[row][column].trade(agent, other_agent, num_goods_to_trade,show_trade)
+                            market_list[row][column].trade(agent, other_agent)
                         else:
-                            market_list[row][column].trade(other_agent, agent, num_goods_to_trade,show_trade)
-                            #agent.trade(other_agent,num_goods_to_trade,settings["show trade"])
+                            market_list[row][column].trade(other_agent, agent)
+
                         #print_total_utility()
                         break
                 find_new_box(agent)
@@ -454,18 +462,18 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(Display,region,radius):
+def new_agent_in_region(Display,region,radius,preference):
     global initial_utility
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,Display,num_agents+1,radius)
+        agent=Agent.Agent(region,Display,num_agents+1,radius,preference)
         agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
             find_new_box(agent)
             agent.draw()
-            initial_utility += agent.get_utility_cobb_douglass()
+            initial_utility += agent.get_utility()
             num_agents += 1
 
 
@@ -485,8 +493,9 @@ def create_many_agents(Display, num):
         for column in range(len(market_list[row])):
             region = market_list[row][column].region
             radius = market_list[row][column].settings["radius"]
+            preference = market_list[row][column].settings["preference"]
             for i in range(num):
-                agent = new_agent_in_region(Display,region,radius)
+                agent = new_agent_in_region(Display,region,radius,preference)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
                     if not radius == agent.radius:
@@ -543,14 +552,18 @@ def create_input_box(name,rect,default_setting):
 def initialize_defaults_box_list():
     global default_box_list
     global defaults
+    import string
 
     set_radius = create_input_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
     set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_utiltty_function = create_input_box("cobb_douglass",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    #do this in a cleaner way?
+    set_preference.ACCEPTED = string.ascii_lowercase
+
 
     default_box_list.append(set_radius)
     default_box_list.append(set_trade)
-    default_box_list.append(set_utiltty_function)
+    default_box_list.append(set_preference)
 
 def initialize_setting_box_list():
     global setting_box_list
