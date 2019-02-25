@@ -29,8 +29,17 @@ class Agent:
         b=255
         self.color=(r,g,b)
 
+    def create_preferences(self):
+        if self.preference == "normal":
+            self.pref_apples = float(random.randint(1,9)) / 10
+            self.pref_oranges = 1-self.pref_apples
+            return
+        elif self.preference =="linear":
+            self.pref_apples = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
+            self.pref_oranges = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
+
     #Initialize variables
-    def __init__(self,region,display,ID,radius):
+    def __init__(self,region,display,ID,radius,preference):
         self.display = display
         self.region = pygame.Rect(region)
         self.id = ID
@@ -41,12 +50,11 @@ class Agent:
         self.apples = 100
         self.oranges = 100
 
-        self.pref_apples = float(random.randint(1,9)) / 10
-        self.pref_oranges = 1-self.pref_apples
+        self.preference = preference
+        self.create_preferences()
 
 
         self.box = (0,0)
-
 
         self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
         self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
@@ -155,19 +163,44 @@ class Agent:
     def marginal_rate_of_substitution_reverse(self):
         return self.pref_oranges/self.pref_apples
 
-    """
-    #linear, this can be a single return statement
+
+
     def get_utility(self):
+        if self.preference == "normal":
+            return self.__get_utility_cobb_douglass()
+        elif self.preference == "linear":
+            return self.__get_utility_linear()
+
+    #linear, this can be a single return statement
+    def __get_utility_linear(self):
         utility = 0
         utility += self.pref_apples*self.apples + self.pref_oranges*self.oranges
         return utility
-    """
 
-    def get_utility_cobb_douglass(self):
-        #this becomes a complex number
-        if isinstance( self.apples ** self.pref_apples + self.oranges ** self.pref_oranges, complex):
-            self.print_info()
+    def __get_utility_cobb_douglass(self):
+        #if isinstance( self.apples ** self.pref_apples + self.oranges ** self.pref_oranges, complex):
+        #    self.print_info()
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
+
+
+
+    #Number of oranges willing to trade for 1 apple
+    def get_mrs_apples(self):
+        if self.preference == "normal":
+            return (self.pref_apples * self.oranges) / (self.pref_oranges * self.apples)
+        elif self.preference == "linear":
+            return self.pref_apples/self.pref_oranges
+        print("mrs apples bug")
+        self.print_info()
+
+    #number of apples willing to trade for 1 orange
+    def get_mrs_oranges(self):
+        if self.preference == "normal":
+            return (self.pref_oranges * self.apples) /(self.pref_apples * self.oranges)
+        elif self.preference == "linear":
+            return self.pref_oranges/self.pref_apples
+        print("mrs oranges bug")
+        self.print_info()
 
 
 

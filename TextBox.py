@@ -14,8 +14,8 @@ class TextBox():
         self.rect = pygame.Rect(rect)
         self.buffer = [] #this holds the input
         self.final = None #this is the current input displayed
-        self.text_size =10
-        self.ACCEPTED= string.digits
+        self.text_size = 10
+        self.ACCEPTED = string.digits
 
         self.rendered = None
         self.render_rect = None
@@ -45,11 +45,14 @@ class TextBox():
         self.buffer = []
         return input
 
-    def get_input_as_int(self):
-        if not self.buffer:
-            return ""
-        input = int("".join(self.buffer))
-        return input
+    def get_input(self):
+        if self.ACCEPTED == string.digits:
+            if not self.buffer:
+                return ""
+            input = int("".join(self.buffer))
+            return input
+        return "".join(self.buffer)
+
 
     def update(self):
         new = "".join(self.buffer)
