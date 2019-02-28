@@ -36,7 +36,7 @@ from ColorDefinitions import *
 #Global things
 market_list = [[]]
 button_list = []
-setting_box_list= []
+setting_box_list = []
 default_box_list = []
 wait = True
 change_simulation_settings = False
@@ -64,10 +64,10 @@ defaults = {
 
 
 # In[2]:
-WIDTH= 1200
-HEIGHT =800
-TITLE="Exchange Economy Simulation"
-INFO_WIDTH=400
+WIDTH = 1400
+HEIGHT = 800
+TITLE = "Exchange Economy Simulation"
+INFO_WIDTH = 400
 
 BUTTON_WIDTH = 110
 BUTTON_HEIGHT = 60
@@ -76,15 +76,15 @@ BUTTON_Y = 20
 BUTTON_SPACE = 10
 
 #Border of agents
-TOP_BORDER = BUTTON_Y+BUTTON_HEIGHT
-BOTTOM_BORDER = HEIGHT
-RIGTH_BORDER = WIDTH-INFO_WIDTH
+TOP_BORDER = BUTTON_Y + BUTTON_HEIGHT
+BOTTOM_BORDER = HEIGHT + settings["space"]
+RIGTH_BORDER = WIDTH - INFO_WIDTH
 LEFT_BORDER = 0
 
 
-region_width = RIGTH_BORDER-LEFT_BORDER
-region_height = BOTTOM_BORDER-TOP_BORDER
-SINGLE_MARKET_BORDER = (LEFT_BORDER,TOP_BORDER,region_width,region_height)
+region_width = RIGTH_BORDER - LEFT_BORDER
+region_height = BOTTOM_BORDER - TOP_BORDER
+SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
 
 num_agents = 0
@@ -104,32 +104,41 @@ def divide_rect(rectangle,rows,columns,space):
     height=rectangle.height/rows
     width=rectangle.width/columns
 
-    r_list=[[0 for x in range(columns)] for y in range(rows)]
+    r_list = [[0 for x in range(columns)] for y in range(rows)]
     for row in range(rows):
         for c in range(columns):
-            r=rectangle.copy()
-            r.y+=int(row*height)
-            r.x+=int(c*width)
-            r.width=width-space
-            r.height=height-space
-            r_list[row][c]=r
+            r = rectangle.copy()
+            r.y += int(row*height)
+            r.x += int(c*width)
+            r.width = width-space
+            r.height = height-space
+            r_list[row][c] = r
     return r_list
 
 #Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS=20
-BIN_NUM_COLUMNS=20
+BIN_NUM_ROWS = 20
+BIN_NUM_COLUMNS = 20
 
-BOX_MAP=divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
+BOX_MAP = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
 
 #each row+colum represents a box and contains a list of agents in that box
-box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
+box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 
 
 # In[3]:
+#add ability to load other data too, like settings
+def load_function(button):
+    global market_list
+    market_list = pickle.load(open("save.p","rb"))
+    draw_agents(button.display)
+
 def save_function(button):
-    pass
+    global market_list
+    pickle.dump(market_list, open("save.p","wb"))
+
+
 
 def market_settings_function(button):
     global change_market_settings
@@ -138,20 +147,20 @@ def market_settings_function(button):
     global default_box_list
 
     change_market_settings = not change_market_settings
-    button.Display.fill(WHITE)
+    button.display.fill(WHITE)
 
     button_list=[]
     if change_market_settings:
         button.text = "Apply"
         button.x = BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE)
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function)
         button_list.append(button)
         button_list.append(return_button)
 
     else:
         num_markets_selected = 0
-        draw_agents()
-        initalize_button_list(button.Display)
+        draw_agents(button.display)
+        initalize_button_list(button.display)
 
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
@@ -192,19 +201,19 @@ def settings_function(button):
     global setting_box_list
 
     change_simulation_settings = not change_simulation_settings
-    button.Display.fill(WHITE)
+    button.display.fill(WHITE)
 
     button_list=[]
     if change_simulation_settings:
         button.text = "Apply"
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.Display,return_function)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function)
         button_list.append(button)
         button_list.append(return_button)
 
 
     else:
-        draw_agents()
-        initalize_button_list(button.Display)
+        draw_agents(button.display)
+        initalize_button_list(button.display)
 
 
         print("updating simulation settings")
@@ -216,7 +225,7 @@ def settings_function(button):
 
 def reset_function(button):
     clear()
-    button.Display.fill(WHITE)
+    button.display.fill(WHITE)
     initialize_market()
 
 def return_function(button):
@@ -228,10 +237,10 @@ def return_function(button):
     change_simulation_settings = False
     change_market_settings = False
     button_list=[]
-    initalize_button_list(button.Display)
-    button.Display.fill(WHITE)
-    draw_agents()
-    draw_utility_graph(button.Display)
+    initalize_button_list(button.display)
+    button.display.fill(WHITE)
+    draw_agents(button.display)
+    draw_utility_graph(button.display)
 
     #what does this do? should i add the same for market_settings??
     for box in setting_box_list:
@@ -252,10 +261,10 @@ def step_function(button):
     global wait
     wait = True
     button.color=LIME_GREEN
-    button.Display.fill(WHITE)
+    button.display.fill(WHITE)
     move_agents()
-    draw_agents()
-    draw_utility_graph(button.Display)
+    draw_agents(button.display)
+    draw_utility_graph(button.display)
 
 
 def region_function(button):
@@ -267,7 +276,7 @@ def region_function(button):
 
     if region_mode:
         #TODO
-        button.text = "borders on"
+        button.text = "Borders on"
         button.color = GREEN
 
         for row in range(len(market_list)):
@@ -277,10 +286,10 @@ def region_function(button):
 
 
     else:
-        button.text = "borders off"
+        button.text = "Borders off"
         button.color = RED
 
-        #Do borders by market? would use less memory compared to by agents
+        #Do Borders by market? would use less memory compared to by agents
         new_region = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),1,1,settings["space"])[0][0]
         #new_region = pygame.Rect(SINGLE_MARKET_BORDER)
 
@@ -298,7 +307,7 @@ def region_function(button):
 def screenshot_function(button):
     now=datetime.datetime.now()
     current_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " +str(now.hour) + "h" +str(now.minute)+ "m" +str(now.second) +"s"
-    pygame.image.save(button.Display,current_time+" screenshot.jpg")
+    pygame.image.save(button.display,current_time+" screenshot.jpg")
 
 
 
@@ -310,7 +319,7 @@ def clear():
     global initial_utility
     global num_agents
     initial_utility = 1
-    num_agents = 1
+    num_agents = 0
     agent_list =[]
     utility_tracker=[]
     utility_grapher.clear()
@@ -396,7 +405,9 @@ def move_agents():
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
 
-    i=0
+    #i = 0
+    #instead of looping over the agents by markets.. loop over by box
+    #perhaps use multiple threads?
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
@@ -417,8 +428,9 @@ def move_agents():
 
                         #print_total_utility()
                         break
+                #dont need to do this every loop?
                 find_new_box(agent)
-            i+=1
+            #i+=1
             #print("Market number",i)
             #print("Price: ",market_list[row][column].get_price())
             #print("")
@@ -432,22 +444,22 @@ def get_utility():
             utility += market_list[row][column].get_utility()
     return utility
 
-def draw_agents():
+def draw_agents(display):
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             for agent in market_list[row][column].agents:
-                agent.draw()
+                agent.draw(display)
 
-def draw_markets(Display):
+def draw_markets(display):
     global market_list
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
-            pygame.draw.rect(Display, market_list[row][column].color, market_list[row][column].region, 1)
+            pygame.draw.rect(display, market_list[row][column].color, market_list[row][column].region, 1)
 
-def draw_utility_graph(Display):
+def draw_utility_graph(display):
     if len(utility_grapher)>1:
         line=list(zip(utility_x_cordinates,list(utility_grapher)))
-        pygame.draw.lines(Display, RED, False,line, 1)
+        pygame.draw.lines(display, RED, False,line, 1)
 
 def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
@@ -462,17 +474,17 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(Display,region,radius,preference):
+def new_agent_in_region(display,region,radius,preference):
     global initial_utility
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,Display,num_agents+1,radius,preference)
+        agent=Agent.Agent(region,num_agents+1,radius,preference)
         agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
             find_new_box(agent)
-            agent.draw()
+            agent.draw(display)
             initial_utility += agent.get_utility()
             num_agents += 1
 
@@ -484,7 +496,7 @@ def new_agent_in_region(Display,region,radius,preference):
     return None
 
 
-def create_many_agents(Display, num):
+def create_many_agents(display, num):
     global num_agents
     global market_list
 
@@ -495,7 +507,7 @@ def create_many_agents(Display, num):
             radius = market_list[row][column].settings["radius"]
             preference = market_list[row][column].settings["preference"]
             for i in range(num):
-                agent = new_agent_in_region(Display,region,radius,preference)
+                agent = new_agent_in_region(display,region,radius,preference)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
                     if not radius == agent.radius:
@@ -513,20 +525,21 @@ def print_total_utility():
     print(global_utility)
 
 ## TODO:
-#make a create button function
-def initalize_button_list(Display):
+#do this in a loop, have a list of names and a list of button functions and then loop trough
+def initalize_button_list(display):
     global button_list
 
     small_text = pygame.font.Font("freesansbold.ttf",20)
-    pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,Display,pause_function)
-    reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
+    pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,display,pause_function)
+    reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,display,reset_function)
     #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
-    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
-    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Region on",small_text,Display,region_function)
-    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
-    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,Display,screenshot_function)
-    save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,Display,save_function)
-    market_settings_button = Button.button(BUTTON_X+8*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"M Settings",small_text,Display,market_settings_function)
+    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,display,step_function)
+    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Borders on",small_text,display,region_function)
+    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,display,settings_function)
+    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,display,screenshot_function)
+    save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,display,save_function)
+    market_settings_button = Button.button(BUTTON_X+8*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"M Settings",small_text,display,market_settings_function)
+    load_button = Button.button(BUTTON_X+9*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Load",small_text,display,load_function)
 
     button_list.append(reset_button)
     button_list.append(pause_button)
@@ -536,6 +549,7 @@ def initalize_button_list(Display):
     button_list.append(screenshot_button)
     button_list.append(save_button)
     button_list.append(market_settings_button)
+    button_list.append(load_button)
 
 def create_input_box(name,rect,default_setting):
 
@@ -554,9 +568,10 @@ def initialize_defaults_box_list():
     global defaults
     import string
 
+    y_space = 5
     set_radius = create_input_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT+2*y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
     #do this in a cleaner way?
     set_preference.ACCEPTED = string.ascii_lowercase
 
@@ -569,8 +584,9 @@ def initialize_setting_box_list():
     global setting_box_list
     global settings
 
+    y_space = 5
     set_rows = create_input_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
-    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
+    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
 
     setting_box_list.append(set_columns)
     setting_box_list.append(set_rows)
@@ -587,7 +603,7 @@ def initialize_market():
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
 
-def market_clicked(market, mouse):
+def market_clicked(market, mouse, display):
     global wait
 
     for agent in market.agents:
@@ -596,10 +612,10 @@ def market_clicked(market, mouse):
             #If the simulation is paused the agents need to be re_drawn
             if wait:
                 if agent.is_selected:
-                    agent.draw()
+                    agent.draw(display)
                 else:
-                    agent.remove_selected_circle()
-                    draw_agents()
+                    agent.remove_selected_circle(display)
+                    draw_agents(display)
             return
     market.is_selected = not market.is_selected
     if market.is_selected:
@@ -616,8 +632,8 @@ def main():
     global market_list
 
     pygame.init()
-    Display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
-    Display.fill(WHITE)
+    display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
+    display.fill(WHITE)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 30)
@@ -627,7 +643,7 @@ def main():
     initialize_market()
     initialize_setting_box_list()
     initialize_defaults_box_list()
-    initalize_button_list(Display)
+    initalize_button_list(display)
 
 
     run = True
@@ -640,7 +656,7 @@ def main():
 
                 #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
-                    create_many_agents(Display,1)
+                    create_many_agents(display,1)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
@@ -649,7 +665,7 @@ def main():
                 #check if input box is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(Display,text.execute())
+                        create_many_agents(display,text.execute())
 
                     #Delete last input
                     elif event.key == pygame.K_BACKSPACE:
@@ -721,47 +737,47 @@ def main():
                         for column in range(len(market_list[row])):
                             #check if market is clicked before looping over agents
                             if market_list[row][column].region.collidepoint(mouse):
-                                market_clicked(market_list[row][column], mouse)
+                                market_clicked(market_list[row][column], mouse, display)
                                 break
 
         if change_simulation_settings:
             for input_box in setting_box_list:
                 input_box.update()
-                input_box.draw(Display)
+                input_box.draw(display)
 
                 textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
                 textRect.midright = input_box.rect.midleft
                 textRect.x -= 5
-                Display.blit(textSurf, textRect)
+                display.blit(textSurf, textRect)
 
         elif change_market_settings:
             for input_box in default_box_list:
                 input_box.update()
-                input_box.draw(Display)
+                input_box.draw(display)
 
                 textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
                 textRect.midright = input_box.rect.midleft
                 textRect.x -= 5
-                Display.blit(textSurf, textRect)
+                display.blit(textSurf, textRect)
         else:
             if wait:
                 button_list[1].color = GREEN
                 button_list[1].text = "Start"
 
             else:
-                Display.fill(WHITE)
+                display.fill(WHITE)
                 move_agents()
-                draw_agents()
+                draw_agents(display)
                 button_list[1].color = RED
                 button_list[1].text = "Pause"
                 button_list[2].color = GREEN
-                draw_utility_graph(Display)
+                draw_utility_graph(display)
 
-            draw_markets(Display)
+            draw_markets(display)
 
             #draw the input box
             text.update()
-            text.draw(Display)
+            text.draw(display)
 
         #draw the buttons
         for b in button_list:
@@ -770,18 +786,18 @@ def main():
 
 
         fps = font.render(str(int(clock.get_fps())), True, BLACK)
-        Display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
+        display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
         x = 100
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 u = font.render(str(market_list[row][column].price),True,BLACK)
-                Display.blit(u,(850,x))
+                display.blit(u,(850,x))
                 x += 50
 
 
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
-        Display.blit(u,(1000,750))
+        display.blit(u,(1000,750))
 
         #60 Frames per second
         clock.tick(60)

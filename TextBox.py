@@ -69,14 +69,14 @@ class TextBox():
             self.blink = not self.blink
             self.blink_timer = pygame.time.get_ticks()
 
-    def draw(self,surface):
+    def draw(self,display):
         outline_color = self.active_color if self.active else self.outline_color
         outline = self.rect.inflate(self.outline_width*2,self.outline_width*2)
-        surface.fill(outline_color,outline)
-        surface.fill(self.color,self.rect)
+        display.fill(outline_color,outline)
+        display.fill(self.color,self.rect)
         if self.rendered:
-            surface.blit(self.rendered,self.render_rect,self.render_area)
+            display.blit(self.rendered,self.render_rect,self.render_area)
         if self.blink and self.active:
             curse = self.render_area.copy()
             curse.topleft = self.render_rect.topleft
-            surface.fill(self.font_color,(curse.right+1,curse.y,2,curse.h))
+            display.fill(self.font_color,(curse.right+1,curse.y,2,curse.h))

@@ -16,18 +16,18 @@ class button:
         self.color=color
         self.text=text
         self.font=font
-        self.Display=display
+        self.display=display
         self.function=function
 
     def draw_button(self):
-        pygame.draw.rect(self.Display, self.color,(self.x,self.y,self.width,self.heigth))
+        pygame.draw.rect(self.display, self.color,(self.x,self.y,self.width,self.heigth))
 
         #empty string = false, if there is text then draw it
         if self.text:
             #draw the text in the middle of the button
             textSurf, textRect = text_objects(self.text, self.font)
             textRect.center = ((self.x+(self.width/2)), (self.y+(self.heigth/2)) )
-            self.Display.blit(textSurf, textRect)
+            self.display.blit(textSurf, textRect)
 
     def getRect(self):
         return (self.x,self.y,self.width,self.heigth)
