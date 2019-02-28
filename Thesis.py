@@ -99,6 +99,7 @@ initial_utility = 1
 
 pr = cProfile.Profile()
 
+#devides a pygame.Rect into multiple smaller Rects
 def divide_rect(rectangle,rows,columns,space):
     height = int(rectangle.height/rows)
     width = int(rectangle.width/columns)
@@ -111,7 +112,6 @@ def divide_rect(rectangle,rows,columns,space):
     for row in range(rows):
         for c in range(columns):
             r_list[row][c] = pygame.Rect(r_x+(width*c),r_y+(height*row),width-space,height-space)
-            print(pygame.Rect(r_x+(width*c),r_y+(height*row),width-space,height-space))
     return r_list
 
 
