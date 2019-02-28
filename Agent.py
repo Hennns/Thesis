@@ -83,7 +83,7 @@ class Agent:
         other_agent.change_y =- self.change_y
 
         #self.move_away_from_edge()
-        other_agent.move_away_from_edge()
+        #other_agent.move_away_from_edge()
 
 
     def move_away_from_edge(self):
@@ -243,22 +243,21 @@ class Agent:
 
     #Dont collide when on way back to its market
     def collision(self,other_agent):
-        #if self.returning_to_market():
-        #    return False
 
         #http://cgp.wikidot.com/circle-to-circle-collision-detection
-        dx = self.x-other_agent.x
-        dy = self.y-other_agent.y
-        r = self.radius+self.radius
-        if(dx*dx)+(dy*dy)<r*r:
+        dx = self.x - other_agent.x
+        dy = self.y - other_agent.y
+        r = self.radius + other_agent.radius
+        if(dx*dx) + (dy*dy) < r*r:
+            if self.returning_to_market():
+                return False
             return True
         return False
 
 
-    #TODO
+
     def returning_to_market(self):
-        ##Add code here
-        return False
+        return not self.region.collidepoint((self.x,self.y))
 
     def is_point_over_agent(self,point):
         x,y = point

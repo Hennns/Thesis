@@ -99,25 +99,26 @@ initial_utility = 1
 
 pr = cProfile.Profile()
 
-#split a pygame.Rect into many smaller pygame.Rect
 def divide_rect(rectangle,rows,columns,space):
-    height=rectangle.height/rows
-    width=rectangle.width/columns
+    height = int(rectangle.height/rows)
+    width = int(rectangle.width/columns)
+    r_y = rectangle.y
+    r_x = rectangle.x
 
     r_list = [[0 for x in range(columns)] for y in range(rows)]
+
+
     for row in range(rows):
         for c in range(columns):
-            r = rectangle.copy()
-            r.y += int(row*height)
-            r.x += int(c*width)
-            r.width = width-space
-            r.height = height-space
-            r_list[row][c] = r
+            r_list[row][c] = pygame.Rect(r_x+(width*c),r_y+(height*row),width-space,height-space)
+            print(pygame.Rect(r_x+(width*c),r_y+(height*row),width-space,height-space))
     return r_list
 
+
+
 #Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS = 20
-BIN_NUM_COLUMNS = 20
+BIN_NUM_ROWS = 45
+BIN_NUM_COLUMNS = 45
 
 BOX_MAP = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
 
