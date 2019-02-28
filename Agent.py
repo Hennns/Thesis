@@ -52,13 +52,10 @@ class Agent:
         self.preference = preference
         self.create_preferences()
 
-
         self.box = (0,0)
 
         self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
         self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
-        self.on_edge_x = False
-        self.on_edge_y = False
 
         angle = random.uniform(0,2*math.pi)
         self.change_x = math.cos(angle)*SPEED
@@ -81,45 +78,6 @@ class Agent:
 
         other_agent.change_x =- self.change_x
         other_agent.change_y =- self.change_y
-
-        #self.move_away_from_edge()
-        #other_agent.move_away_from_edge()
-
-
-    def move_away_from_edge(self):
-        if self.on_edge_x:
-            self.change_x = -self.change_x
-
-        if self.on_edge_y:
-            self.change_y = -self.change_y
-
-
-    def trade(self,other_agent,num_goods_to_trade,show_trade):
-        #print()
-        #self.print_info()
-        #other_agent.print_info()
-
-        traded = self.margin_trade(other_agent,num_goods_to_trade)
-        if show_trade:
-            if traded:
-                self.color = LIME_GREEN
-                other_agent.color = LIME_GREEN
-                #self.print_info()
-                #other_agent.print_info()
-            else:
-                self.color = RED
-                other_agent.color = RED
-
-
-
-
-
-
-    def marginal_rate_of_substitution(self):
-        return self.pref_apples/self.pref_oranges
-
-    def marginal_rate_of_substitution_reverse(self):
-        return self.pref_oranges/self.pref_apples
 
 
 
@@ -169,8 +127,7 @@ class Agent:
 
     def move(self):
         self.update_color()
-        self.on_edge_x = False
-        self.on_edge_y = False
+
 
         # Move the center
         self.x += self.change_x
@@ -180,34 +137,31 @@ class Agent:
         if self.y > self.region.bottom - self.radius:
             self.change_y = -abs(self.change_y)
             self.y += self.change_y
-            self.on_edge_y = True
 
-        elif self.y < self.radius+self.region.top:
+        elif self.y < self.radius + self.region.top:
             self.change_y = abs(self.change_y)
             self.y += self.change_y
-            self.on_edge_y = True
 
-        if self.x > self.region.right-self.radius:
+        if self.x > self.region.right - self.radius:
             self.change_x = -abs(self.change_x)
             self.x += self.change_x
-            self.on_edge_x = True
 
-        elif self.x < self.radius+self.region.left:
+        elif self.x < self.radius + self.region.left:
             self.change_x = abs(self.change_x)
             self.x += self.change_x
-            self.on_edge_x = True
 
 
 
 
-    #Dont collide when on way back to its market
+
+    #http://cgp.wikidot.com/circle-to-circle-collision-detection
     def collision(self,other_agent):
 
-        #http://cgp.wikidot.com/circle-to-circle-collision-detection
         dx = self.x - other_agent.x
         dy = self.y - other_agent.y
         r = self.radius + other_agent.radius
         if(dx*dx) + (dy*dy) < r*r:
+                #Dont collide when on way back to its market
             if self.returning_to_market():
                 return False
             return True
@@ -242,4 +196,4 @@ class Agent:
     def remove_selected_circle(self,display):
         x,y = self.get_location()
         pygame.draw.circle(display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
-        self.draw()
+        self.draw(display)
