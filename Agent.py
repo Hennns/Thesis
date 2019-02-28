@@ -39,11 +39,10 @@ class Agent:
             self.pref_oranges = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
 
     #Initialize variables
-    def __init__(self,region,display,ID,radius,preference):
-        self.display = display
+    def __init__(self,region,ID,radius,preference):
+
         self.region = pygame.Rect(region)
         self.id = ID
-
         self.color = BLUE
         self.radius =radius
         self.is_selected = False
@@ -275,14 +274,14 @@ class Agent:
 
 
 
-    def draw(self):
+    def draw(self,display):
         x,y=self.get_location()
         if self.is_selected:
-            pygame.draw.circle(self.display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
-        pygame.draw.circle(self.display, self.color, (x,y), self.radius)
+            pygame.draw.circle(display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
+        pygame.draw.circle(display, self.color, (x,y), self.radius)
 
 
-    def remove_selected_circle(self):
+    def remove_selected_circle(self,display):
         x,y=self.get_location()
-        pygame.draw.circle(self.display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
+        pygame.draw.circle(display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
         self.draw()

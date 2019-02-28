@@ -129,6 +129,9 @@ box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 # In[3]:
 def save_function(button):
+    global market_list
+    pickle.dump(market_list, open("save.p","wb"))
+
     pass
 
 def market_settings_function(button):
@@ -150,7 +153,7 @@ def market_settings_function(button):
 
     else:
         num_markets_selected = 0
-        draw_agents()
+        draw_agents(button.Display)
         initalize_button_list(button.Display)
 
         for row in range(len(market_list)):
@@ -203,7 +206,7 @@ def settings_function(button):
 
 
     else:
-        draw_agents()
+        draw_agents(button.Display)
         initalize_button_list(button.Display)
 
 
@@ -230,7 +233,7 @@ def return_function(button):
     button_list=[]
     initalize_button_list(button.Display)
     button.Display.fill(WHITE)
-    draw_agents()
+    draw_agents(button.Display)
     draw_utility_graph(button.Display)
 
     #what does this do? should i add the same for market_settings??
@@ -254,7 +257,7 @@ def step_function(button):
     button.color=LIME_GREEN
     button.Display.fill(WHITE)
     move_agents()
-    draw_agents()
+    draw_agents(button.Display)
     draw_utility_graph(button.Display)
 
 
@@ -432,11 +435,11 @@ def get_utility():
             utility += market_list[row][column].get_utility()
     return utility
 
-def draw_agents():
+def draw_agents(display):
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             for agent in market_list[row][column].agents:
-                agent.draw()
+                agent.draw(dislay)
 
 def draw_markets(Display):
     global market_list
@@ -467,12 +470,12 @@ def new_agent_in_region(Display,region,radius,preference):
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,Display,num_agents+1,radius,preference)
+        agent=Agent.Agent(region,num_agents+1,radius,preference)
         agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
             find_new_box(agent)
-            agent.draw()
+            agent.draw(Display)
             initial_utility += agent.get_utility()
             num_agents += 1
 
@@ -522,7 +525,7 @@ def initalize_button_list(Display):
     reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,Display,reset_function)
     #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
     step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,Display,step_function)
-    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Region on",small_text,Display,region_function)
+    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"borders on",small_text,Display,region_function)
     settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,Display,settings_function)
     screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,Display,screenshot_function)
     save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,Display,save_function)
@@ -587,7 +590,7 @@ def initialize_market():
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
 
-def market_clicked(market, mouse):
+def market_clicked(market, mouse, display):
     global wait
 
     for agent in market.agents:
@@ -596,10 +599,10 @@ def market_clicked(market, mouse):
             #If the simulation is paused the agents need to be re_drawn
             if wait:
                 if agent.is_selected:
-                    agent.draw()
+                    agent.draw(display)
                 else:
-                    agent.remove_selected_circle()
-                    draw_agents()
+                    agent.remove_selected_circle(display)
+                    draw_agents(display)
             return
     market.is_selected = not market.is_selected
     if market.is_selected:
@@ -721,7 +724,7 @@ def main():
                         for column in range(len(market_list[row])):
                             #check if market is clicked before looping over agents
                             if market_list[row][column].region.collidepoint(mouse):
-                                market_clicked(market_list[row][column], mouse)
+                                market_clicked(market_list[row][column], mouse, Display)
                                 break
 
         if change_simulation_settings:
@@ -751,7 +754,7 @@ def main():
             else:
                 Display.fill(WHITE)
                 move_agents()
-                draw_agents()
+                draw_agents(Display)
                 button_list[1].color = RED
                 button_list[1].text = "Pause"
                 button_list[2].color = GREEN
