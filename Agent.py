@@ -112,49 +112,8 @@ class Agent:
 
 
 
-    #Trade on the margin of the other_agent
-    def margin_trade(self,other_agent,num_goods_to_trade):
 
-        if self.marginal_rate_of_substitution() > other_agent.marginal_rate_of_substitution():
-            compensation=other_agent.marginal_rate_of_substitution()
-            compensation=compensation*num_goods_to_trade
-            if other_agent.apples-num_goods_to_trade <0 or self.oranges-compensation <0:
-                return False
-            #print("bigger mrs")
-            #print("compensation is",compensation)
-            self.apples+=num_goods_to_trade
-            other_agent.apples-=num_goods_to_trade
 
-            self.oranges-=compensation
-            other_agent.oranges+=compensation
-        else:
-            compensation=other_agent.marginal_rate_of_substitution_reverse()
-            compensation=compensation*num_goods_to_trade
-            if self.apples-compensation <0 or other_agent.oranges-num_goods_to_trade <0:
-                return False
-
-            #print("smaller mrs")
-            #print("compensation is",compensation)
-
-            self.apples-=compensation
-            other_agent.apples+=compensation
-
-            self.oranges+=num_goods_to_trade
-            other_agent.oranges-=num_goods_to_trade
-
-        return True
-    """
-    #Currently not in use
-    def middle_trade(self,other_agent,num_goods_to_trade):
-        if margin_trade(self,other_agent,num_goods_to_trade/2):
-            self.color=LIME_GREEN
-        else:
-            self.color=RED
-        if margin_trade(other_agent,self,num_goods_to_trade/2):
-            other_agent.color=LIME_GREEN
-        else:
-            other_agent.color=RED
-    """
 
     def marginal_rate_of_substitution(self):
         return self.pref_apples/self.pref_oranges
