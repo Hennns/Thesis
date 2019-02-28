@@ -128,6 +128,7 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
+#add ability to load other data too, like settings
 def load_function(button):
     global market_list
     market_list = pickle.load(open("save.p","rb"))
@@ -318,7 +319,7 @@ def clear():
     global initial_utility
     global num_agents
     initial_utility = 1
-    num_agents = 1
+    num_agents = 0
     agent_list =[]
     utility_tracker=[]
     utility_grapher.clear()
@@ -404,7 +405,9 @@ def move_agents():
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
 
-    #i=0
+    #i = 0
+    #instead of looping over the agents by markets.. loop over by box
+    #perhaps use multiple threads?
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
@@ -565,9 +568,10 @@ def initialize_defaults_box_list():
     global defaults
     import string
 
+    y_space = 5
     set_radius = create_input_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
+    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT+2*y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
     #do this in a cleaner way?
     set_preference.ACCEPTED = string.ascii_lowercase
 
@@ -580,8 +584,9 @@ def initialize_setting_box_list():
     global setting_box_list
     global settings
 
+    y_space = 5
     set_rows = create_input_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
-    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
+    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
 
     setting_box_list.append(set_columns)
     setting_box_list.append(set_rows)
