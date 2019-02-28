@@ -132,6 +132,9 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 #add ability to load other data too, like settings
 def load_function(button):
     global market_list
+    global wait
+    wait = True
+    button.display.fill(WHITE)
     market_list = pickle.load(open("save.p","rb"))
     draw_agents(button.display)
 
@@ -175,10 +178,11 @@ def market_settings_function(button):
                     for input_box in default_box_list:
                         #print("updating settings in market",row,column)
                         market_list[row][column].settings[input_box.name]=input_box.get_input()
-                        #maybe not best way to do it
-                        if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
-                            for agent in market_list[row][column].agents:
-                                agent.preference = market_list[row][column].settings["preference"]
+                        #same as below
+                        #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
+                        #    for agent in market_list[row][column].agents:
+                        #        agent.preference = market_list[row][column].settings["preference"]
+
         #else update only the settings of the selected markets
         else:
             for row in range(len(market_list)):
@@ -187,11 +191,12 @@ def market_settings_function(button):
                         for input_box in default_box_list:
                             #print("updating settings in market",row,column)
                             market_list[row][column].settings[input_box.name] = input_box.get_input()
-                            #maybe not best way to do it
-                            if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
-                                for agent in market_list[row][column].agents:
-                                    agent.preference = market_list[row][column].settings["preference"]
-                                print("updated market",row,column)
+                            #It's possible to update settings for agents this way
+                            #but preference cannot be changed on the fly
+                            #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
+                            #    for agent in market_list[row][column].agents:
+                            #        agent.preference = market_list[row][column].settings["preference"]
+                            #    print("updated market",row,column)
 
 
 
@@ -313,7 +318,6 @@ def screenshot_function(button):
 
 
 def clear():
-    #global agent_list
     global market_list
     global utility_tracker
     global utility_grapher
@@ -321,7 +325,7 @@ def clear():
     global num_agents
     initial_utility = 1
     num_agents = 0
-    agent_list =[]
+
     utility_tracker=[]
     utility_grapher.clear()
     market_list = [[]]
@@ -342,8 +346,7 @@ def set_box(agent):
     print(y)
     print("box not found")
 
-#This can use markets to only search in the current market if regions are on
-#speed up this function!
+#the ask for forgivness approach tested to be faster than ask for permission
 def get_nearby_agents(current_r,current_c):
     global box_tracker
     nearby_agents = []
@@ -356,8 +359,8 @@ def get_nearby_agents(current_r,current_c):
     return nearby_agents
 
 
-#can use same logic as function above
 def get_nearby_boxes(current_r,current_c):
+    global BIN_NUM_ROWS
     nearby_boxes = []
     for row in range(-1,2):
         if 0<= current_r-row <BIN_NUM_ROWS:
@@ -381,7 +384,7 @@ def find_new_box(agent):
        return
 
 
-    #Then check other nearby boxes
+
     #the loop can be unrolled here
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
@@ -406,7 +409,6 @@ def move_agents():
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
 
-    #i = 0
     #instead of looping over the agents by markets.. loop over by box
     #perhaps use multiple threads?
     for row in range(len(market_list)):
@@ -427,14 +429,10 @@ def move_agents():
                         else:
                             market_list[row][column].trade(other_agent, agent)
 
-                        #print_total_utility()
                         break
-                #dont need to do this every loop?
+
                 find_new_box(agent)
-            #i+=1
-            #print("Market number",i)
-            #print("Price: ",market_list[row][column].get_price())
-            #print("")
+
     pr.disable()
 
 def get_utility():
@@ -519,12 +517,6 @@ def create_many_agents(display, num):
 
     print(num_agents," number agents")
 
-def print_total_utility():
-    global_utility = 0
-    for agent in agent_list:
-        global_utility += agent.get_utility()
-    print(global_utility)
-
 ## TODO:
 #do this in a loop, have a list of names and a list of button functions and then loop trough
 def initalize_button_list(display):
@@ -588,9 +580,11 @@ def initialize_setting_box_list():
     y_space = 5
     set_rows = create_input_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
     set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
+    set_space = create_input_box("space",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
 
     setting_box_list.append(set_columns)
     setting_box_list.append(set_rows)
+    setting_box_list.append(set_space)
 
 
 def initialize_market():
