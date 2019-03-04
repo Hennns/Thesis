@@ -6,7 +6,7 @@ from ColorDefinitions import *
 #from Thesis.ColorDefinitions import *
 
 #https://github.com/Mekire/pygame-textbox
-#modified from above source
+#this file is modified from above source
 
 class TextBox():
     def __init__(self,rect):
