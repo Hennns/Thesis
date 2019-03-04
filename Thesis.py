@@ -26,6 +26,7 @@ import Agent
 import Button
 import TextBox
 import Market
+import Graph
 from ColorDefinitions import *
 
 
@@ -96,6 +97,8 @@ utility_tracker = []
 utility_grapher = deque(maxlen=INFO_WIDTH)
 utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
+
+raw_utility_list = []
 
 pr = cProfile.Profile()
 
@@ -408,6 +411,7 @@ def move_agents():
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
+    raw_utility_list.append(get_utility())
 
     #instead of looping over the agents by markets.. loop over by box
     #perhaps use multiple threads?
@@ -419,7 +423,6 @@ def move_agents():
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
-                #agent.print_info()
                 for other_agent in get_nearby_agents(r,c):
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
@@ -456,9 +459,15 @@ def draw_markets(display):
             pygame.draw.rect(display, market_list[row][column].color, market_list[row][column].region, 1)
 
 def draw_utility_graph(display):
-    if len(utility_grapher)>1:
-        line=list(zip(utility_x_cordinates,list(utility_grapher)))
+    line = get_utility_tuple_list()
+    if line is not None:
         pygame.draw.lines(display, RED, False,line, 1)
+
+def get_utility_tuple_list():
+    if len(utility_grapher)>1:
+        return list(zip(utility_x_cordinates,list(utility_grapher)))
+    return None
+
 
 def text_objects(text, font):
     textSurface = font.render(text, True, BLACK)
@@ -487,9 +496,6 @@ def new_agent_in_region(display,region,radius,preference):
             initial_utility += agent.get_utility()
             num_agents += 1
 
-
-        #draw the agent on top if it cannot be place other ways?
-        #make that a setting?
             return agent
 
     return None
@@ -625,6 +631,7 @@ def main():
     global setting_box_list
     global region_mode #Don't need this to be a global variable
     global market_list
+    global pr
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
@@ -640,7 +647,9 @@ def main():
     initialize_defaults_box_list()
     initalize_button_list(display)
 
+    graph = Graph.Graph()
 
+    test_value = 0
     run = True
     while run:
         for event in pygame.event.get():
@@ -793,6 +802,20 @@ def main():
 
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
         display.blit(u,(1000,750))
+
+
+        #draw graph
+        time = pygame.time.get_ticks()
+        if time >= graph.last_update_time + graph.update_delta:
+            graph.last_update_time = time
+            #pr.enable()
+            graph.plot(raw_utility_list)
+
+            graph.update_graph()
+            #pr.disable()
+        display.blit(graph.get_graph_as_image(),(1010,150))
+
+
 
         #60 Frames per second
         clock.tick(60)
