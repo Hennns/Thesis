@@ -46,8 +46,8 @@ class Agent:
         self.color = BLUE
         self.radius = radius
         self.is_selected = False
-        self.apples = 100
-        self.oranges = 100
+        self.apples = 20
+        self.oranges = 20
 
         self.preference = preference
         self.create_preferences()
@@ -94,8 +94,6 @@ class Agent:
         return utility
 
     def __get_utility_cobb_douglass(self):
-        #if isinstance( self.apples ** self.pref_apples + self.oranges ** self.pref_oranges, complex):
-        #    self.print_info()
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
 
 
@@ -128,7 +126,6 @@ class Agent:
     def move(self):
         self.update_color()
 
-
         # Move the center
         self.x += self.change_x
         self.y += self.change_y
@@ -149,7 +146,6 @@ class Agent:
         elif self.x < self.radius + self.region.left:
             self.change_x = abs(self.change_x)
             self.x += self.change_x
-
 
 
 

@@ -89,16 +89,22 @@ SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
 
 num_agents = 0
+num_time_steps = 1
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
 
+#This can be removed!
 utility_tracker = []
 utility_grapher = deque(maxlen=INFO_WIDTH)
 utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
 initial_utility = 1
 
+#This is the new ones used, they can be renamed
 raw_utility_list = []
+raw_utility_grapher = deque(maxlen = 50)
+raw_utility_grapher_x = deque(maxlen = 50)
+
 
 pr = cProfile.Profile()
 
@@ -404,14 +410,18 @@ def move_agents():
     global pr
     global box_tracker
     global market_list
+    global num_time_steps
 
+    num_time_steps += 1
     pr.enable()
 
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
     utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
     utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
-    raw_utility_list.append(get_utility())
+    #raw_utility_list.append(get_utility())
+    raw_utility_grapher.append(get_utility())
+    raw_utility_grapher_x.append(num_time_steps)
 
     #instead of looping over the agents by markets.. loop over by box
     #perhaps use multiple threads?
@@ -775,7 +785,7 @@ def main():
                 button_list[1].color = RED
                 button_list[1].text = "Pause"
                 button_list[2].color = GREEN
-                draw_utility_graph(display)
+                #draw_utility_graph(display)
 
             draw_markets(display)
 
@@ -809,8 +819,8 @@ def main():
         if time >= graph.last_update_time + graph.update_delta:
             graph.last_update_time = time
             #pr.enable()
-            graph.plot(raw_utility_list)
-
+            #graph.plot(raw_utility_list)
+            graph.plot(raw_utility_grapher_x,raw_utility_grapher)
             graph.update_graph()
             #pr.disable()
         display.blit(graph.get_graph_as_image(),(1010,150))

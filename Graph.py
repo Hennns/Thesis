@@ -21,7 +21,7 @@ class Graph():
         self.update_delta = 250
         self.last_update_time = 0
 
-
+        self.title = "title"
 
         self.surf = "somevalue"
         self.update_graph()
@@ -30,21 +30,30 @@ class Graph():
     def get_graph_as_image(self):
         return self.surf
 
+    """
     #data is list of points
     def plot(self,data):
         self.fig.clf()
 
         ax = self.fig.gca()
-        print(ax)
         ax.plot(data)
+    """
 
+    def plot(self,x_list,y_list):
+        self.fig.clf()
+        ax = self.fig.gca()
+
+        ax.plot(x_list,y_list)
 
     def update_graph(self):
+        #prevents axsis labels from being cut off
+        self.fig.tight_layout()
+
+
         canvas = agg.FigureCanvasAgg(self.fig)
         canvas.draw()
         renderer = canvas.get_renderer()
         raw_data = renderer.tostring_rgb()
-
         size = canvas.get_width_height()
 
         self.surf = pygame.image.fromstring(raw_data, size, "RGB")
