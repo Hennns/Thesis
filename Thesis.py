@@ -56,7 +56,7 @@ defaults = {
             "radius" : 10,
             "show trade": 0,
             "random_num_goods": True,
-            "preference": "linear"
+            "preference": "normal"
             }
 
 #possible preferences:
@@ -98,12 +98,15 @@ num_time_steps = 1
 utility_tracker = []
 utility_grapher = deque(maxlen=INFO_WIDTH)
 utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
+
+
 initial_utility = 1
 
 #This is the new ones used, they can be renamed
+num_visible_data_points = 2000
 raw_utility_list = []
-raw_utility_grapher = deque(maxlen = 50)
-raw_utility_grapher_x = deque(maxlen = 50)
+raw_utility_grapher = deque(maxlen = num_visible_data_points)
+raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
 
 
 pr = cProfile.Profile()
@@ -511,10 +514,10 @@ def new_agent_in_region(display,region,radius,preference):
     return None
 
 
-def create_many_agents(display, num):
+def create_many_agents(display, num, graph):
     global num_agents
     global market_list
-
+    global initial_utility
 
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
@@ -530,7 +533,7 @@ def create_many_agents(display, num):
                         print("radius is ",agent.radius)
                         print("market",row,column)
 
-
+    graph.ylim_min = initial_utility
     print(num_agents," number agents")
 
 ## TODO:
@@ -642,6 +645,7 @@ def main():
     global region_mode #Don't need this to be a global variable
     global market_list
     global pr
+    global initial_utility
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
@@ -659,6 +663,7 @@ def main():
 
     graph = Graph.Graph()
 
+
     test_value = 0
     run = True
     while run:
@@ -670,7 +675,7 @@ def main():
 
                 #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
-                    create_many_agents(display,1)
+                    create_many_agents(display,1,graph)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
@@ -679,7 +684,7 @@ def main():
                 #check if input box is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(display,text.execute())
+                        create_many_agents(display,text.execute(),graph)
 
                     #Delete last input
                     elif event.key == pygame.K_BACKSPACE:
