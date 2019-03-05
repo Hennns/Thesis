@@ -101,7 +101,10 @@ class Agent:
     #Number of oranges willing to trade for 1 apple
     def get_mrs_apples(self):
         if self.preference == "normal":
-            return (self.pref_apples * self.oranges) / (self.pref_oranges * self.apples)
+            try:
+                return (self.pref_apples * self.oranges) / (self.pref_oranges * self.apples)
+            except ZeroDivisionError:
+                return 0
         elif self.preference == "linear":
             return self.pref_apples/self.pref_oranges
         print("mrs apples bug")

@@ -22,9 +22,11 @@ class Graph():
         self.last_update_time = 0
 
         self.title = "title"
+        self.ylim_min = None
 
-        self.surf = "somevalue"
         self.update_graph()
+        self.surf = self.get_graph_as_image()
+
 
 
     def get_graph_as_image(self):
@@ -44,6 +46,8 @@ class Graph():
         ax = self.fig.gca()
 
         ax.plot(x_list,y_list)
+        ax.set_title(self.title)
+        ax.set_ylim(ymin = self.ylim_min)
 
     def update_graph(self):
         #prevents axsis labels from being cut off
