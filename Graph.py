@@ -1,7 +1,7 @@
 
 
-import matplotlib
-matplotlib.use("Agg")
+import matplotlib as plt
+plt.use("Agg")
 
 import matplotlib.backends.backend_agg as agg
 import pylab
@@ -12,7 +12,7 @@ import pygame
 
 class Graph():
 
-    def __init__(self):
+    def __init__(self,plot_type):
         self.fig = pylab.figure(figsize=[4, 5], # Inches
                            dpi=100,        # number of dots per inch
                            )
@@ -23,31 +23,37 @@ class Graph():
 
         self.title = "title"
         self.ylim_min = None
+        self.x_label = "x_label"
+        self.y_label = "y_label"
 
         self.update_graph()
         self.surf = self.get_graph_as_image()
+
+        self.plot_type = plot_type
 
 
 
     def get_graph_as_image(self):
         return self.surf
 
-    """
-    #data is list of points
-    def plot(self,data):
-        self.fig.clf()
-
-        ax = self.fig.gca()
-        ax.plot(data)
-    """
 
     def plot(self,x_list,y_list):
-        self.fig.clf()
+        #self.fig.clf()
         ax = self.fig.gca()
 
-        ax.plot(x_list,y_list)
+        if self.plot_type == "line":
+            ax.plot(x_list,y_list)
+            ax.set_ylim(ymin = self.ylim_min)
+        elif self.plot_type == "scatter":
+            ax.scatter(x_list,y_list)
+
+
         ax.set_title(self.title)
-        ax.set_ylim(ymin = self.ylim_min)
+        ax.set_xlabel(self.x_label)
+        ax.set_ylabel(self.y_label)
+
+
+
 
     def update_graph(self):
         #prevents axsis labels from being cut off
@@ -61,3 +67,4 @@ class Graph():
         size = canvas.get_width_height()
 
         self.surf = pygame.image.fromstring(raw_data, size, "RGB")
+        self.fig.clf()

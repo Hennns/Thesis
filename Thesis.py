@@ -637,6 +637,18 @@ def market_clicked(market, mouse, display):
     else:
         market.color = BLACK
 
+
+
+def get_sets_of_apple_orange(market):
+    apples_list = []
+    oranges_list = []
+
+    for agent in market.agents:
+        apples_list.append(agent.apples)
+        oranges_list.append(agent.oranges)
+    return apples_list, oranges_list
+
+
 def main():
     global wait
     global change_simulation_settings
@@ -661,8 +673,8 @@ def main():
     initialize_defaults_box_list()
     initalize_button_list(display)
 
-    graph = Graph.Graph()
-
+    graph = Graph.Graph("line")
+    scatter = Graph.Graph("scatter")
 
     test_value = 0
     run = True
@@ -807,12 +819,12 @@ def main():
         fps = font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
-        x = 100
+        y = 100
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 u = font.render(str(market_list[row][column].price),True,BLACK)
-                display.blit(u,(850,x))
-                x += 50
+                display.blit(u,(850,y))
+                y += 50
 
 
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
@@ -825,10 +837,28 @@ def main():
             graph.last_update_time = time
             #pr.enable()
             #graph.plot(raw_utility_list)
-            graph.plot(raw_utility_grapher_x,raw_utility_grapher)
-            graph.update_graph()
+            #graph.plot(raw_utility_grapher_x,raw_utility_grapher)
+            #graph.update_graph()
             #pr.disable()
-        display.blit(graph.get_graph_as_image(),(1010,150))
+        #display.blit(graph.get_graph_as_image(),(1010,150))
+
+
+
+        #draw scatter
+        time = pygame.time.get_ticks()
+        if time >= scatter.last_update_time + scatter.update_delta:
+            scatter.last_update_time = time
+
+
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    apples, oranges = get_sets_of_apple_orange(market_list[row][column])
+                    scatter.plot(apples, oranges)
+
+
+            scatter.update_graph()
+
+        display.blit(scatter.get_graph_as_image(),(1010,150))
 
 
 

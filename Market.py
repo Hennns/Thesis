@@ -1,6 +1,7 @@
 
 from ColorDefinitions import *
-from sympy import Symbol, solve
+
+from random import random
 
 class Market:
 
@@ -67,16 +68,19 @@ class Market:
 
         #Agent want apples more than other agent
         if mrs_agent > mrs_other_agent:
-            return self.trade_apple_for_oranges(agent, other_agent)
+            if random() < 0.5:
+                return self.trade_apple_for_oranges(agent, other_agent)
+            return self.trade_orange_for_apple(other_agent, agent)
         if mrs_agent == mrs_other_agent:
             return False
 
         #other_agent want apples more than agent
-        return self.trade_apple_for_oranges(other_agent, agent)
+        if random() < 0.5:
+            return self.trade_apple_for_oranges(other_agent, agent)
+        return self.trade_orange_for_apple(agent, other_agent)
 
 
-
-
+    #trade 1 apple for the lowest number of oranges
     def trade_apple_for_oranges(self, agent, other_agent):
         #Can't trade of the other agent cannot give away 1 apple
         if other_agent.apples < 1:
@@ -93,7 +97,6 @@ class Market:
             agent.apples -= 1
             other_agent.oranges -= price
 
-        #Use do-while loop???
         while other_agent.get_utility() < other_agent_old_utillity:
             price += 1
             other_agent.oranges += 1
@@ -111,6 +114,48 @@ class Market:
             return True
         #There is no price where both agents are no worse of
         agent.oranges += price
+        reset()
+        return False
+
+
+
+
+    #opposite of above function
+    #trade 1 orange for the lowest number of apples
+    def trade_orange_for_apple(self, agent, other_agent):
+        #Can't trade of the other agent cannot give away 1 orange
+        if other_agent.oranges < 1:
+            return False
+
+        price = 0
+        agent_old_utility = agent.get_utility()
+        other_agent_old_utillity = other_agent.get_utility()
+        other_agent.oranges -= 1
+        agent.oranges += 1
+
+        def reset():
+            other_agent.oranges += 1
+            agent.oranges -= 1
+            other_agent.apples -= price
+
+        while other_agent.get_utility() < other_agent_old_utillity:
+            price += 1
+            other_agent.apples += 1
+            if agent.apples -price < 0:
+                #agent does not have enough apples to trade
+                reset()
+                return False
+
+        agent.apples -= price
+
+
+
+        if agent_old_utility < agent.get_utility():
+            self.price += price
+            self.num_trades += 1
+            return True
+        #There is no price where both agents are no worse of
+        agent.apples += price
         reset()
         return False
 

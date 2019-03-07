@@ -31,7 +31,12 @@ class Agent:
 
     def create_preferences(self):
         if self.preference == "normal":
-            self.pref_apples = float(random.randint(1,9)) / 10
+            #self.pref_apples = float(random.randint(1,9)) / 10
+            #avoid getting 0 or 1
+            self.pref_apples = random.random()
+            while(not self.pref_apples):
+                self.pref_apples = random.random()
+
             self.pref_oranges = 1-self.pref_apples
             return
         elif self.preference =="linear":
@@ -46,8 +51,8 @@ class Agent:
         self.color = BLUE
         self.radius = radius
         self.is_selected = False
-        self.apples = 20
-        self.oranges = 20
+        self.apples = 50
+        self.oranges = 50
 
         self.preference = preference
         self.create_preferences()
