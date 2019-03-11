@@ -104,7 +104,7 @@ initial_utility = 1
 
 #This is the new ones used, they can be renamed
 num_visible_data_points = 2000
-raw_utility_list = []
+#raw_utility_list = []
 raw_utility_grapher = deque(maxlen = num_visible_data_points)
 raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
 
@@ -141,6 +141,17 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
+
+def graph_type_function(button):
+    if button.text == "scatter":
+        button.text = "line"
+    else:
+        button.text = "scatter"
+
+
+
+
+
 #add ability to load other data too, like settings
 def load_function(button):
     global market_list
@@ -471,6 +482,7 @@ def draw_markets(display):
         for column in range(len(market_list[row])):
             pygame.draw.rect(display, market_list[row][column].color, market_list[row][column].region, 1)
 
+#can be removed
 def draw_utility_graph(display):
     line = get_utility_tuple_list()
     if line is not None:
@@ -552,6 +564,8 @@ def initalize_button_list(display):
     save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,display,save_function)
     market_settings_button = Button.button(BUTTON_X+8*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"M Settings",small_text,display,market_settings_function)
     load_button = Button.button(BUTTON_X+9*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Load",small_text,display,load_function)
+    graph_type_button = Button.button(BUTTON_X+10*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"scatter",small_text,display,graph_type_function)
+
 
     button_list.append(reset_button)
     button_list.append(pause_button)
@@ -562,6 +576,7 @@ def initalize_button_list(display):
     button_list.append(save_button)
     button_list.append(market_settings_button)
     button_list.append(load_button)
+    button_list.append(graph_type_button)
 
 def create_input_box(name,rect,default_setting):
 
@@ -676,7 +691,7 @@ def main():
     graph = Graph.Graph("line")
     scatter = Graph.Graph("scatter")
 
-    test_value = 0
+
     run = True
     while run:
         for event in pygame.event.get():
@@ -830,35 +845,44 @@ def main():
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
         display.blit(u,(1000,750))
 
+        if button_list[-1].text == "line":
+            #draw graph
+            time = pygame.time.get_ticks()
+            if time >= graph.last_update_time + graph.update_delta:
+                graph.last_update_time = time
 
-        #draw graph
-        time = pygame.time.get_ticks()
-        if time >= graph.last_update_time + graph.update_delta:
-            graph.last_update_time = time
-            #pr.enable()
-            #graph.plot(raw_utility_list)
-            #graph.plot(raw_utility_grapher_x,raw_utility_grapher)
-            #graph.update_graph()
-            #pr.disable()
-        #display.blit(graph.get_graph_as_image(),(1010,150))
-
+                #graph.plot(raw_utility_list)
+                graph.plot(raw_utility_grapher_x,raw_utility_grapher)
+                graph.update_graph()
+            display.blit(graph.get_graph_as_image(),(1010,150))
 
 
-        #draw scatter
-        time = pygame.time.get_ticks()
-        if time >= scatter.last_update_time + scatter.update_delta:
-            scatter.last_update_time = time
+
+        elif button_list[-1].text == "scatter":
+            #draw scatter
+            time = pygame.time.get_ticks()
+            if time >= scatter.last_update_time + scatter.update_delta:
+                scatter.last_update_time = time
 
 
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    apples, oranges = get_sets_of_apple_orange(market_list[row][column])
-                    scatter.plot(apples, oranges)
+                for row in range(len(market_list)):
+                    for column in range(len(market_list[row])):
+                        apples, oranges = get_sets_of_apple_orange(market_list[row][column])
+                        scatter.plot(apples, oranges)
 
+                a_list = []
+                b_list = []
 
-            scatter.update_graph()
+                for i in range(100):
+                    a_list.append(i)
+                    b_list.append(100 - i)
 
-        display.blit(scatter.get_graph_as_image(),(1010,150))
+                scatter.plot_type = "line"
+                scatter.plot(a_list,b_list)
+                scatter.plot_type = "scatter"
+                scatter.update_graph()
+
+            display.blit(scatter.get_graph_as_image(),(1010,150))
 
 
 
