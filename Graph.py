@@ -34,6 +34,7 @@ class Graph():
 
 
     def get_graph_as_image(self):
+
         return self.surf
 
 
@@ -43,6 +44,7 @@ class Graph():
 
         if self.plot_type == "line":
             ax.plot(x_list,y_list)
+            
             ax.set_ylim(ymin = self.ylim_min)
         elif self.plot_type == "scatter":
             ax.scatter(x_list,y_list)
