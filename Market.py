@@ -1,7 +1,9 @@
+from random import random
+from collections import deque
+
 
 from ColorDefinitions import *
 
-from random import random
 
 class Market:
 
@@ -17,6 +19,7 @@ class Market:
         self.settings = settings.copy()
         #need to use copy since settings is just the defualts settings and we
         #do not want to change defaults when changeing the settings in a market
+        self.utility_tracker = deque(maxlen = 2000)
 
 
     def get_price(self):

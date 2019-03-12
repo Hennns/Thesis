@@ -5,8 +5,7 @@ import pygame
 import random
 import numpy as np
 import pickle
-import cProfile
-#https://docs.python.org/2/library/profile.html
+
 from collections import deque
 import datetime
 
@@ -94,22 +93,15 @@ num_time_steps = 1
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
 
-#This can be removed!
-utility_tracker = []
-utility_grapher = deque(maxlen=INFO_WIDTH)
-utility_x_cordinates = list(range(RIGTH_BORDER,WIDTH))
-
 
 initial_utility = 1
 
 #This is the new ones used, they can be renamed
 num_visible_data_points = 2000
-#raw_utility_list = []
 raw_utility_grapher = deque(maxlen = num_visible_data_points)
 raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
 
 
-pr = cProfile.Profile()
 
 #devides a pygame.Rect into multiple smaller Rects
 def divide_rect(rectangle,rows,columns,space):
@@ -293,7 +285,7 @@ def step_function(button):
     button.display.fill(WHITE)
     move_agents()
     draw_agents(button.display)
-    draw_utility_graph(button.display)
+    #draw graphs here
 
 
 def region_function(button):
@@ -342,16 +334,17 @@ def screenshot_function(button):
 
 def clear():
     global market_list
-    global utility_tracker
-    global utility_grapher
     global initial_utility
     global num_agents
+    global raw_utility_grapher
+    global raw_utility_grapher_x
+
     initial_utility = 1
     num_agents = 0
-
-    utility_tracker=[]
-    utility_grapher.clear()
     market_list = [[]]
+    raw_utility_grapher.clear()
+    raw_utility_grapher_x.clear()
+
 
 #If the current box is unknown, finds the correct box
 def set_box(agent):
@@ -421,19 +414,19 @@ def find_new_box(agent):
 
 
 def move_agents():
-    global pr
+
     global box_tracker
     global market_list
     global num_time_steps
+    global raw_utility_grapher
+    global raw_utility_grapher_x
+
 
     num_time_steps += 1
-    pr.enable()
 
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
-    utility_tracker.append((len(utility_tracker)+WIDTH-INFO_WIDTH,HEIGHT-(get_utility()/initial_utility)*100))
-    utility_grapher.append(HEIGHT-(get_utility()/initial_utility)*100)
 
-    #raw_utility_list.append(get_utility())
+
     raw_utility_grapher.append(get_utility())
     raw_utility_grapher_x.append(num_time_steps)
 
@@ -443,6 +436,7 @@ def move_agents():
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
             market_list[row][column].num_trades = 1
+            market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
 
             for agent in market_list[row][column].agents:
                 r,c = agent.box
@@ -460,7 +454,6 @@ def move_agents():
 
                 find_new_box(agent)
 
-    pr.disable()
 
 def get_utility():
     global market_list
@@ -481,17 +474,6 @@ def draw_markets(display):
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             pygame.draw.rect(display, market_list[row][column].color, market_list[row][column].region, 1)
-
-#can be removed
-def draw_utility_graph(display):
-    line = get_utility_tuple_list()
-    if line is not None:
-        pygame.draw.lines(display, RED, False,line, 1)
-
-def get_utility_tuple_list():
-    if len(utility_grapher)>1:
-        return list(zip(utility_x_cordinates,list(utility_grapher)))
-    return None
 
 
 def text_objects(text, font):
@@ -626,11 +608,13 @@ def initialize_market():
     global settings
     global defaults
 
+
     r=settings["rows"]
     c=settings["columns"]
     s=settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
+
 
 def market_clicked(market, mouse, display):
     global wait
@@ -851,8 +835,12 @@ def main():
             if time >= graph.last_update_time + graph.update_delta:
                 graph.last_update_time = time
 
-                #graph.plot(raw_utility_list)
-                graph.plot(raw_utility_grapher_x,raw_utility_grapher)
+                #graph.plot(raw_utility_grapher_x,raw_utility_grapher)
+                for row in range(len(market_list)):
+                    for column in range(len(market_list[row])):
+                        label = str(row)+str(column)
+                        graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker), label)
+
                 graph.update_graph()
             display.blit(graph.get_graph_as_image(),(1010,150))
 
@@ -864,11 +852,11 @@ def main():
             if time >= scatter.last_update_time + scatter.update_delta:
                 scatter.last_update_time = time
 
-
                 for row in range(len(market_list)):
                     for column in range(len(market_list[row])):
+                        label = str(row)+str(column)
                         apples, oranges = get_sets_of_apple_orange(market_list[row][column])
-                        scatter.plot(apples, oranges)
+                        scatter.plot(apples, oranges, label)
 
                 a_list = []
                 b_list = []
@@ -878,7 +866,7 @@ def main():
                     b_list.append(100 - i)
 
                 scatter.plot_type = "line"
-                scatter.plot(a_list,b_list)
+                scatter.plot(a_list,b_list, "")
                 scatter.plot_type = "scatter"
                 scatter.update_graph()
 
@@ -894,7 +882,6 @@ def main():
 
 
 
-    pr.print_stats(sort='time')
     #end of loop we exit
     pygame.quit()
 
