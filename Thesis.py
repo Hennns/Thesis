@@ -261,9 +261,8 @@ def return_function(button):
     initalize_button_list(button.display)
     button.display.fill(WHITE)
     draw_agents(button.display)
-    draw_utility_graph(button.display)
 
-    #what does this do? should i add the same for market_settings??
+
     for box in setting_box_list:
         try:
             box.buffer = [str(i) for i in str(settings[box.name])]
@@ -602,7 +601,7 @@ def initialize_setting_box_list():
     setting_box_list.append(set_rows)
     setting_box_list.append(set_space)
 
-
+#reset the utility_tracker's here? would fix bug when changing settings for line graph
 def initialize_market():
     global market_list
     global settings
@@ -801,7 +800,6 @@ def main():
                 button_list[1].color = RED
                 button_list[1].text = "Pause"
                 button_list[2].color = GREEN
-                #draw_utility_graph(display)
 
             draw_markets(display)
 
@@ -836,11 +834,14 @@ def main():
                 graph.last_update_time = time
 
                 #graph.plot(raw_utility_grapher_x,raw_utility_grapher)
+
+                label = []
                 for row in range(len(market_list)):
                     for column in range(len(market_list[row])):
-                        label = str(row)+str(column)
-                        graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker), label)
+                        label.append(str(row) + str(column))
 
+                        graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
+                graph.set_legend(label)
                 graph.update_graph()
             display.blit(graph.get_graph_as_image(),(1010,150))
 
@@ -851,12 +852,8 @@ def main():
             time = pygame.time.get_ticks()
             if time >= scatter.last_update_time + scatter.update_delta:
                 scatter.last_update_time = time
+                label = []
 
-                for row in range(len(market_list)):
-                    for column in range(len(market_list[row])):
-                        label = str(row)+str(column)
-                        apples, oranges = get_sets_of_apple_orange(market_list[row][column])
-                        scatter.plot(apples, oranges, label)
 
                 a_list = []
                 b_list = []
@@ -866,8 +863,20 @@ def main():
                     b_list.append(100 - i)
 
                 scatter.plot_type = "line"
-                scatter.plot(a_list,b_list, "")
+                scatter.plot(a_list,b_list)
+                label.append("initial budget line")
+
                 scatter.plot_type = "scatter"
+
+
+                for row in range(len(market_list)):
+                    for column in range(len(market_list[row])):
+                        label.append(str(row) + str(column))
+                        apples, oranges = get_sets_of_apple_orange(market_list[row][column])
+                        scatter.plot(apples, oranges)
+
+
+                scatter.set_legend(label)
                 scatter.update_graph()
 
             display.blit(scatter.get_graph_as_image(),(1010,150))

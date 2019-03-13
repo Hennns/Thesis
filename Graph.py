@@ -38,12 +38,13 @@ class Graph():
         return self.surf
 
 
-    def plot(self, x_list, y_list, label):
+    def plot(self, x_list, y_list):
         #self.fig.clf()
+        #gca = get current axis
         ax = self.fig.gca()
 
         if self.plot_type == "line":
-            ax.plot(x_list, y_list, label)
+            ax.plot(x_list, y_list)
 
             #ax.set_ylim(ymin = self.ylim_min)
         elif self.plot_type == "scatter":
@@ -55,6 +56,9 @@ class Graph():
         ax.set_ylabel(self.y_label)
 
 
+    def set_legend(self, label):
+        ax = self.fig.gca()
+        ax.legend(label)
 
 
     def update_graph(self):
