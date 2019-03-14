@@ -1,7 +1,9 @@
+from random import random
+from collections import deque
+
 
 from ColorDefinitions import *
 
-from random import random
 
 class Market:
 
@@ -17,7 +19,8 @@ class Market:
         self.settings = settings.copy()
         #need to use copy since settings is just the defualts settings and we
         #do not want to change defaults when changeing the settings in a market
-
+        self.utility_tracker = deque(maxlen = 2000)
+        self.price_tracker = deque(maxlen = 2000)
 
     def get_price(self):
         if self.num_trades >1:
@@ -31,11 +34,9 @@ class Market:
         before_trade_utility_agent = agent.get_utility()
         before_trade_utility_other_agent = other_agent.get_utility()
 
-
         traded = self.attempt_trade(agent,other_agent)
 
-
-
+        #This can be removed!
         if agent.get_utility() <before_trade_utility_agent:
             print("MATH ERROR, agent")
             print("after",agent.get_utility())
@@ -44,20 +45,15 @@ class Market:
         if other_agent.get_utility() <before_trade_utility_other_agent:
             print("MATH ERROR, other agent")
             print("after",other_agent.get_utility())
+        #remove for speed up!! TODO
 
         if show_trade:
             if traded:
                 agent.color=LIME_GREEN
                 other_agent.color=LIME_GREEN
-                #self.print_info()
-                #other_agent.print_info()
             else:
                 agent.color=RED
                 other_agent.color=RED
-
-
-
-
 
 
     #always trade 1 apple

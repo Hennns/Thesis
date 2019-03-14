@@ -38,10 +38,14 @@ class Agent:
                 self.pref_apples = random.random()
 
             self.pref_oranges = 1-self.pref_apples
+
+
             return
         elif self.preference =="linear":
             self.pref_apples = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
             self.pref_oranges = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
+
+
 
     #Initialize variables
     def __init__(self,region,ID,radius,preference):
