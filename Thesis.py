@@ -44,7 +44,8 @@ change_market_settings = False
 
 #move region_mode into settings? TODO
 region_mode = True
-
+update_interval = 100
+#update_interval should be a setting
 settings = {
             "rows": 1,
             "columns": 1,
@@ -67,7 +68,6 @@ defaults = {
 WIDTH = 1400
 HEIGHT = 800
 TITLE = "Exchange Economy Simulation"
-INFO_WIDTH = 400
 
 BUTTON_WIDTH = 110
 BUTTON_HEIGHT = 60
@@ -78,7 +78,7 @@ BUTTON_SPACE = 10
 #Border of agents
 TOP_BORDER = BUTTON_Y + BUTTON_HEIGHT
 BOTTOM_BORDER = HEIGHT + settings["space"]
-RIGTH_BORDER = WIDTH - INFO_WIDTH
+RIGTH_BORDER = WIDTH - 500
 LEFT_BORDER = 0
 
 
@@ -112,7 +112,6 @@ def divide_rect(rectangle,rows,columns,space):
     r_x = rectangle.x
 
     r_list = [[0 for x in range(columns)] for y in range(rows)]
-
 
     for row in range(rows):
         for c in range(columns):
@@ -301,7 +300,6 @@ def region_function(button):
     region_mode = not region_mode
 
     if region_mode:
-        #TODO
         button.text = "Borders on"
         button.color = GREEN
 
@@ -309,8 +307,6 @@ def region_function(button):
             for column in range(len(market_list[row])):
                 for agent in market_list[row][column].agents:
                     agent.region = market_list[row][column].region
-
-
     else:
         button.text = "Borders off"
         button.color = RED
@@ -324,14 +320,11 @@ def region_function(button):
                 for agent in market_list[row][column].agents:
                     agent.region = new_region
 
-                #market_list[row][column].region = SINGLE_MARKET_BORDER
-
-
 
 #https://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
 #Used to get current time
 def screenshot_function(button):
-    now=datetime.datetime.now()
+    now = datetime.datetime.now()
     current_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " +str(now.hour) + "h" +str(now.minute)+ "m" +str(now.second) +"s"
     pygame.image.save(button.display,current_time+" screenshot.jpg")
 
@@ -424,19 +417,19 @@ def move_agents():
     global num_time_steps
     global raw_utility_grapher
     global raw_utility_grapher_x
-
+    global update_interval
 
     num_time_steps += 1
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
 
-    raw_utility_grapher.append(get_utility())
-    raw_utility_grapher_x.append(num_time_steps)
+    update = num_time_steps % update_interval == 0
+
+    if update:
+        raw_utility_grapher.append(get_utility())
+        raw_utility_grapher_x.append(num_time_steps)
 
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
-            market_list[row][column].price = 0
-            market_list[row][column].num_trades = 1
-
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
@@ -451,8 +444,11 @@ def move_agents():
                         #only collide with one agent each timesetep
                         break
                 find_new_box(agent)
-            market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
-            market_list[row][column].price_tracker.append(market_list[row][column].get_price())
+            if update:
+                market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
+                market_list[row][column].price_tracker.append(market_list[row][column].get_price())
+                market_list[row][column].price = 0
+                market_list[row][column].num_trades = 1
 
 #market_list does not need to be global for this function!!
 def get_utility():
@@ -654,15 +650,16 @@ def get_sets_of_apple_orange(market):
 def update_graph(key, market_list, graph):
     label = []
 
-
     if key == "line":
         graph.plot_type = "line"
+        graph.title = "Utility over time"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
                 graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
 
     elif key == "scatter":
+            graph.title = "Allocation of goods for each agent"
             #plot budget line
             a_list = []
             b_list = []
@@ -681,7 +678,8 @@ def update_graph(key, market_list, graph):
                     graph.plot(apples, oranges)
 
     elif key == "price":
-        graph.plot_type = "line"
+        graph.plot_type = "scatter" #scatter or line??? Ask Mayer
+        graph.title = "Price over time"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
@@ -698,7 +696,6 @@ def main():
     global setting_box_list
     global region_mode #Don't need this to be a global variable
     global market_list
-    global pr
     global initial_utility
 
     pygame.init()
@@ -708,6 +705,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 30)
 
+    #rename?
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
     initialize_market()
@@ -868,7 +866,7 @@ def main():
         """
 
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
-        display.blit(u,(1000,750))
+        display.blit(u,(RIGTH_BORDER ,750))
 
         #update graph
         time = pygame.time.get_ticks()
@@ -876,7 +874,7 @@ def main():
             graph.last_update_time = time
             update_graph(button_list[-1].text, market_list, graph)
         #draw the graph
-        display.blit(graph.get_graph_as_image(),(1010,150))
+        display.blit(graph.get_graph_as_image(),(RIGTH_BORDER,150))
 
 
         #60 Frames per second
