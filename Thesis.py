@@ -97,6 +97,7 @@ num_time_steps = 1
 initial_utility = 1
 
 #This is the new ones used, they can be renamed
+#Make this a setting?
 num_visible_data_points = 2000
 raw_utility_grapher = deque(maxlen = num_visible_data_points)
 raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
@@ -137,10 +138,11 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 def graph_type_function(button):
     if button.text == "scatter":
         button.text = "line"
+    elif button.text == "line":
+        button.text = "price"
+
     else:
         button.text = "scatter"
-
-
 
 
 
@@ -150,7 +152,11 @@ def load_function(button):
     global wait
     wait = True
     button.display.fill(WHITE)
-    market_list = pickle.load(open("save.p","rb"))
+    try:
+        market_list = pickle.load(open("save.p","rb"))
+    except FileNotFoundError:
+        print("saved file not fond")
+
     draw_agents(button.display)
 
 def save_function(button):
@@ -207,7 +213,7 @@ def market_settings_function(button):
                             #print("updating settings in market",row,column)
                             market_list[row][column].settings[input_box.name] = input_box.get_input()
                             #It's possible to update settings for agents this way
-                            #but preference cannot be changed on the fly
+                            #but preference cannot be changed on the fly (unless utility is reset)
                             #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
                             #    for agent in market_list[row][column].agents:
                             #        agent.preference = market_list[row][column].settings["preference"]
@@ -220,6 +226,7 @@ def settings_function(button):
     global button_list
     global market_list
     global setting_box_list
+    global wait
 
     change_simulation_settings = not change_simulation_settings
     button.display.fill(WHITE)
@@ -231,18 +238,17 @@ def settings_function(button):
         button_list.append(button)
         button_list.append(return_button)
 
-
     else:
         draw_agents(button.display)
         initalize_button_list(button.display)
 
-
-        print("updating simulation settings")
+        #print("updating simulation settings")
         for input_box in setting_box_list:
             settings[input_box.name] = input_box.get_input()
         #update markets, if row/columns have changed
         #todo for now this is temporarily and it will clear all market data
         initialize_market()
+        wait = True
 
 def reset_function(button):
     clear()
@@ -413,7 +419,6 @@ def find_new_box(agent):
 
 
 def move_agents():
-
     global box_tracker
     global market_list
     global num_time_steps
@@ -422,20 +427,15 @@ def move_agents():
 
 
     num_time_steps += 1
-
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
-
 
     raw_utility_grapher.append(get_utility())
     raw_utility_grapher_x.append(num_time_steps)
 
-    #instead of looping over the agents by markets.. loop over by box
-    #perhaps use multiple threads?
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             market_list[row][column].price = 0
             market_list[row][column].num_trades = 1
-            market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
 
             for agent in market_list[row][column].agents:
                 r,c = agent.box
@@ -448,12 +448,13 @@ def move_agents():
                             market_list[row][column].trade(agent, other_agent)
                         else:
                             market_list[row][column].trade(other_agent, agent)
-
+                        #only collide with one agent each timesetep
                         break
-
                 find_new_box(agent)
+            market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
+            market_list[row][column].price_tracker.append(market_list[row][column].get_price())
 
-
+#market_list does not need to be global for this function!!
 def get_utility():
     global market_list
     utility=0
@@ -583,7 +584,6 @@ def initialize_defaults_box_list():
     #do this in a cleaner way?
     set_preference.ACCEPTED = string.ascii_lowercase
 
-
     default_box_list.append(set_radius)
     default_box_list.append(set_trade)
     default_box_list.append(set_preference)
@@ -606,7 +606,8 @@ def initialize_market():
     global market_list
     global settings
     global defaults
-
+    global raw_utility_grapher
+    global raw_utility_grapher_x
 
     r=settings["rows"]
     c=settings["columns"]
@@ -614,6 +615,9 @@ def initialize_market():
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
 
+
+    raw_utility_grapher = deque(maxlen = num_visible_data_points)
+    raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
 
 def market_clicked(market, mouse, display):
     global wait
@@ -636,7 +640,6 @@ def market_clicked(market, mouse, display):
         market.color = BLACK
 
 
-
 def get_sets_of_apple_orange(market):
     apples_list = []
     oranges_list = []
@@ -645,6 +648,47 @@ def get_sets_of_apple_orange(market):
         apples_list.append(agent.apples)
         oranges_list.append(agent.oranges)
     return apples_list, oranges_list
+
+
+
+def update_graph(key, market_list, graph):
+    label = []
+
+
+    if key == "line":
+        graph.plot_type = "line"
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                label.append(str(row) + str(column))
+                graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
+
+    elif key == "scatter":
+            #plot budget line
+            a_list = []
+            b_list = []
+            for i in range(100):
+                a_list.append(i)
+                b_list.append(100 - i)
+            graph.plot_type = "line"
+            graph.plot(a_list,b_list)
+            label.append("initial budget line")
+            graph.plot_type = "scatter"
+
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    label.append(str(row) + str(column))
+                    apples, oranges = get_sets_of_apple_orange(market_list[row][column])
+                    graph.plot(apples, oranges)
+
+    elif key == "price":
+        graph.plot_type = "line"
+        for row in range(len(market_list)):
+            for column in range(len(market_list[row])):
+                label.append(str(row) + str(column))
+                graph.plot(raw_utility_grapher_x, list(market_list[row][column].price_tracker))
+
+    graph.set_legend(label)
+    graph.update_graph()
 
 
 def main():
@@ -671,8 +715,7 @@ def main():
     initialize_defaults_box_list()
     initalize_button_list(display)
 
-    graph = Graph.Graph("line")
-    scatter = Graph.Graph("scatter")
+    graph = Graph.Graph("scatter")
 
 
     run = True
@@ -815,72 +858,25 @@ def main():
 
         fps = font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
-
+        """
         y = 100
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 u = font.render(str(market_list[row][column].price),True,BLACK)
                 display.blit(u,(850,y))
                 y += 50
-
+        """
 
         u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
         display.blit(u,(1000,750))
 
-        if button_list[-1].text == "line":
-            #draw graph
-            time = pygame.time.get_ticks()
-            if time >= graph.last_update_time + graph.update_delta:
-                graph.last_update_time = time
-
-                #graph.plot(raw_utility_grapher_x,raw_utility_grapher)
-
-                label = []
-                for row in range(len(market_list)):
-                    for column in range(len(market_list[row])):
-                        label.append(str(row) + str(column))
-
-                        graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
-                graph.set_legend(label)
-                graph.update_graph()
-            display.blit(graph.get_graph_as_image(),(1010,150))
-
-
-
-        elif button_list[-1].text == "scatter":
-            #draw scatter
-            time = pygame.time.get_ticks()
-            if time >= scatter.last_update_time + scatter.update_delta:
-                scatter.last_update_time = time
-                label = []
-
-
-                a_list = []
-                b_list = []
-
-                for i in range(100):
-                    a_list.append(i)
-                    b_list.append(100 - i)
-
-                scatter.plot_type = "line"
-                scatter.plot(a_list,b_list)
-                label.append("initial budget line")
-
-                scatter.plot_type = "scatter"
-
-
-                for row in range(len(market_list)):
-                    for column in range(len(market_list[row])):
-                        label.append(str(row) + str(column))
-                        apples, oranges = get_sets_of_apple_orange(market_list[row][column])
-                        scatter.plot(apples, oranges)
-
-
-                scatter.set_legend(label)
-                scatter.update_graph()
-
-            display.blit(scatter.get_graph_as_image(),(1010,150))
-
+        #update graph
+        time = pygame.time.get_ticks()
+        if time >= graph.last_update_time + graph.update_delta:
+            graph.last_update_time = time
+            update_graph(button_list[-1].text, market_list, graph)
+        #draw the graph
+        display.blit(graph.get_graph_as_image(),(1010,150))
 
 
         #60 Frames per second
