@@ -13,14 +13,14 @@ import pygame
 class Graph():
 
     def __init__(self,plot_type):
-        self.fig = pylab.figure(figsize=[4, 5], # Inches
+        self.fig = pylab.figure(figsize=[5, 5], # Inches
                            dpi=100,        # number of dots per inch
                            )
 
 
         self.update_delta = 250
         self.last_update_time = 0
-
+        self.plot_type = plot_type
         self.title = "title"
         self.ylim_min = None
         self.x_label = "x_label"
@@ -29,12 +29,10 @@ class Graph():
         self.update_graph()
         self.surf = self.get_graph_as_image()
 
-        self.plot_type = plot_type
 
 
 
     def get_graph_as_image(self):
-
         return self.surf
 
 
