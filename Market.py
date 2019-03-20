@@ -1,3 +1,4 @@
+
 from random import random
 from collections import deque
 
@@ -7,8 +8,7 @@ from ColorDefinitions import *
 
 class Market:
 
-
-    def __init__(self,region,color,settings):
+    def __init__(self, region, color, settings):
         self.color = color
         self.is_selected = False
         self.region = region
@@ -23,28 +23,28 @@ class Market:
         self.price_tracker = deque(maxlen = 2000)
 
     def get_price(self):
-        if self.num_trades >1:
-            self.num_trades-1
-        return self.price/self.num_trades
+        if self.num_trades > 1:
+            self.num_trades - 1
+        return self.price / self.num_trades
 
 
-    def trade(self,agent,other_agent):
+    def trade(self, agent, other_agent):
         show_trade = self.settings["show trade"]
 
         before_trade_utility_agent = agent.get_utility()
         before_trade_utility_other_agent = other_agent.get_utility()
 
-        traded = self.attempt_trade(agent,other_agent)
+        traded = self.attempt_trade(agent, other_agent)
 
-        #This can be removed!
+        #This can be removed! TODO
         if agent.get_utility() <before_trade_utility_agent:
             print("MATH ERROR, agent")
-            print("after",agent.get_utility())
-            print("before",before_trade_utility_agent)
+            print("after", agent.get_utility())
+            print("before", before_trade_utility_agent)
 
         if other_agent.get_utility() <before_trade_utility_other_agent:
             print("MATH ERROR, other agent")
-            print("after",other_agent.get_utility())
+            print("after", other_agent.get_utility())
         #remove for speed up!! TODO
 
         if show_trade:
@@ -100,9 +100,7 @@ class Market:
                 #agent does not have enough oranges to trade
                 reset()
                 return False
-
         agent.oranges -= price
-
 
         if agent_old_utility < agent.get_utility():
             self.price += price
@@ -141,10 +139,7 @@ class Market:
                 #agent does not have enough apples to trade
                 reset()
                 return False
-
         agent.apples -= price
-
-
 
         if agent_old_utility < agent.get_utility():
             self.price += price

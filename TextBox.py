@@ -1,3 +1,4 @@
+
 import string
 import pygame
 from pygame.locals import *
@@ -69,7 +70,7 @@ class TextBox():
             self.blink = not self.blink
             self.blink_timer = pygame.time.get_ticks()
 
-    def draw(self,display):
+    def draw(self, display):
         outline_color = self.active_color if self.active else self.outline_color
         outline = self.rect.inflate(self.outline_width*2,self.outline_width*2)
         display.fill(outline_color,outline)

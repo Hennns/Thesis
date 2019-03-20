@@ -2,16 +2,15 @@
 # In[1]:
 
 import pygame
-import random
-import numpy as np
+import string
 import pickle
-
 from collections import deque
 import datetime
 
 #Make window appear centered
 import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
+
 """
 #Do this when running via atom
 from Thesis import Agent
@@ -41,15 +40,16 @@ default_box_list = []
 wait = True
 change_simulation_settings = False
 change_market_settings = False
+button_font = None
 
 #move region_mode into settings? TODO
 region_mode = True
-update_interval = 100
-#update_interval should be a setting
+
 settings = {
             "rows": 1,
             "columns": 1,
             "space": 20,
+            "update interval": 10
             }
 
 defaults = {
@@ -90,8 +90,6 @@ SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 num_agents = 0
 num_time_steps = 1
 
-#Documnetation for deque
-#https://docs.python.org/2/library/collections.html#collections.deque
 
 
 initial_utility = 1
@@ -99,6 +97,9 @@ initial_utility = 1
 #This is the new ones used, they can be renamed
 #Make this a setting?
 num_visible_data_points = 2000
+
+#Documnetation for deque
+#https://docs.python.org/2/library/collections.html#collections.deque
 raw_utility_grapher = deque(maxlen = num_visible_data_points)
 raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
 
@@ -416,12 +417,12 @@ def move_agents():
     global num_time_steps
     global raw_utility_grapher
     global raw_utility_grapher_x
-    global update_interval
+    global setting_box_list
 
     num_time_steps += 1
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
 
-    update = num_time_steps % update_interval == 0
+    update = num_time_steps % settings["update interval"] == 0
 
     if update:
         raw_utility_grapher.append(get_utility())
@@ -530,43 +531,28 @@ def create_many_agents(display, num, graph):
     graph.ylim_min = initial_utility
     print(num_agents," number agents")
 
-## TODO:
-#do this in a loop, have a list of names and a list of button functions and then loop trough
 def initalize_button_list(display):
     global button_list
+    global button_font
 
-    small_text = pygame.font.Font("freesansbold.ttf",20)
-    pause_button = Button.button(BUTTON_X,BUTTON_Y,GREEN,"Start",small_text,display,pause_function)
-    reset_button = Button.button(BUTTON_X+(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,LIGTH_GREY,"Reset!",small_text,display,reset_function)
-    #The input box is at the BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE) spot
-    step_button = Button.button(BUTTON_X+3*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Step",small_text,display,step_function)
-    region_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Borders on",small_text,display,region_function)
-    settings_button = Button.button(BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Settings",small_text,display,settings_function)
-    screenshot_button = Button.button(BUTTON_X+6*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Screenshot",small_text,display,screenshot_function)
-    save_button = Button.button(BUTTON_X+7*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Save",small_text,display,save_function)
-    market_settings_button = Button.button(BUTTON_X+8*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"M Settings",small_text,display,market_settings_function)
-    load_button = Button.button(BUTTON_X+9*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Load",small_text,display,load_function)
-    graph_type_button = Button.button(BUTTON_X+10*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"scatter",small_text,display,graph_type_function)
+    names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
+     "Save", "M Settings", "Load", "scatter"]
+    functions = [pause_function, reset_function, step_function, region_function,
+     settings_function, screenshot_function, save_function, market_settings_function, load_function, graph_type_function]
 
+    #The input box is at the BUTTON_X spot, so that is skipped by adding x
+    x = BUTTON_WIDTH + BUTTON_SPACE
+    for i in range(len(names)):
+        button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i])
+        button_list.append(button)
 
-    button_list.append(reset_button)
-    button_list.append(pause_button)
-    button_list.append(step_button)
-    button_list.append(region_button)
-    button_list.append(settings_button)
-    button_list.append(screenshot_button)
-    button_list.append(save_button)
-    button_list.append(market_settings_button)
-    button_list.append(load_button)
-    button_list.append(graph_type_button)
-
-def create_input_box(name,rect,default_setting):
+def create_input_box(name, rect, default_setting):
     box = TextBox.TextBox(rect)
     box.name = name
     try:
         box.buffer = [str(i) for i in str(default_setting[box.name])]
     except KeyError:
-        print("no key for setting box")
+        print("no default for setting:", name)
         pass
 
     return box
@@ -574,31 +560,25 @@ def create_input_box(name,rect,default_setting):
 def initialize_defaults_box_list():
     global default_box_list
     global defaults
-    import string
 
     y_space = 5
-    set_radius = create_input_box("radius",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_trade = create_input_box("show trade",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    set_preference =  create_input_box("preference",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT+2*y_space,BUTTON_WIDTH,BUTTON_HEIGHT),defaults)
-    #do this in a cleaner way?
-    set_preference.ACCEPTED = string.ascii_lowercase
-
-    default_box_list.append(set_radius)
-    default_box_list.append(set_trade)
-    default_box_list.append(set_preference)
+    names = ["radius", "show trade", "preference"]
+    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
+    for i in range(len(names)):
+        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), defaults)
+        default_box_list.append(box)
+    default_box_list[-1].ACCEPTED = string.ascii_lowercase
 
 def initialize_setting_box_list():
     global setting_box_list
     global settings
 
     y_space = 5
-    set_rows = create_input_box("rows",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+BUTTON_HEIGHT,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
-    set_columns = create_input_box("columns",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+2*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
-    set_space = create_input_box("space",(BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y+3*BUTTON_HEIGHT+y_space,BUTTON_WIDTH,BUTTON_HEIGHT),settings)
-
-    setting_box_list.append(set_columns)
-    setting_box_list.append(set_rows)
-    setting_box_list.append(set_space)
+    names = ["rows", "columns", "space", "update interval"]
+    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
+    for i in range(len(names)):
+        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
+        setting_box_list.append(box)
 
 
 def initialize_market():
@@ -699,6 +679,7 @@ def main():
     global region_mode #Don't need this to be a global variable
     global market_list
     global initial_utility
+    global button_font
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
@@ -709,7 +690,7 @@ def main():
     button_font = pygame.font.Font("freesansbold.ttf",20)
 
     #rename?
-    text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
+    text = TextBox.TextBox((BUTTON_X,BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
 
     initialize_market()
     initialize_setting_box_list()
@@ -836,15 +817,15 @@ def main():
         else:
             if wait:
                 #TODO move this to the wait button
-                button_list[1].color = GREEN
-                button_list[1].text = "Start"
+                button_list[0].color = GREEN
+                button_list[0].text = "Start"
 
             else:
                 display.fill(WHITE)
                 move_agents()
                 draw_agents(display)
-                button_list[1].color = RED
-                button_list[1].text = "Pause"
+                button_list[0].color = RED
+                button_list[0].text = "Pause"
                 button_list[2].color = GREEN
 
             draw_markets(display)

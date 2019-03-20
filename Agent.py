@@ -47,7 +47,7 @@ class Agent:
 
 
     #Initialize variables
-    def __init__(self,region,ID,radius,preference):
+    def __init__(self, region, ID, radius, preference):
 
         self.region = pygame.Rect(region)
         self.id = ID
@@ -62,12 +62,12 @@ class Agent:
 
         self.box = (0,0)
 
-        self.x = random.randrange(self.radius+self.region.left,self.region.right-self.radius)
-        self.y = random.randrange(self.radius+self.region.top,self.region.bottom-self.radius)
+        self.x = random.randrange(self.radius+self.region.left, self.region.right-self.radius)
+        self.y = random.randrange(self.radius+self.region.top, self.region.bottom-self.radius)
 
         angle = random.uniform(0,2*math.pi)
-        self.change_x = math.cos(angle)*SPEED
-        self.change_y = math.sin(angle)*SPEED
+        self.change_x = math.cos(angle) * SPEED
+        self.change_y = math.sin(angle) * SPEED
 
         self.update_color()
 
@@ -79,8 +79,8 @@ class Agent:
         direction = distance[0]/norm, distance[1]/norm
 
         #update new direction
-        self.change_x = direction[0]*SPEED
-        self.change_y = direction[1]*SPEED
+        self.change_x = direction[0] * SPEED
+        self.change_y = direction[1] * SPEED
 
         #to other_agent new direction is the opposite of agent
         other_agent.change_x =- self.change_x
@@ -95,7 +95,7 @@ class Agent:
             return self.__get_utility_linear()
 
     def __get_utility_linear(self):
-        return self.pref_apples*self.apples + self.pref_oranges*self.oranges
+        return self.pref_apples * self.apples + self.pref_oranges*self.oranges
 
     def __get_utility_cobb_douglass(self):
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges
@@ -117,7 +117,7 @@ class Agent:
     #number of apples willing to trade for 1 orange
     def get_mrs_oranges(self):
         if self.preference == "normal":
-            return (self.pref_oranges * self.apples) /(self.pref_apples * self.oranges)
+            return (self.pref_oranges * self.apples) / (self.pref_apples * self.oranges)
         elif self.preference == "linear":
             return self.pref_oranges/self.pref_apples
         print("mrs oranges bug")
@@ -127,8 +127,8 @@ class Agent:
 
     def print_info(self):
         print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
-        print(" agent",self.id," pref_apples:",self.pref_apples ," pref_oranges:",self.pref_oranges)
-        print(" agent",self.id," utility ",self.get_utility_cobb_douglass())
+        print(" agent",self.id," pref_apples:", self.pref_apples ," pref_oranges:",self.pref_oranges)
+        print(" agent",self.id," utility ", self.get_utility_cobb_douglass())
 
     def move(self):
         self.update_color()
@@ -158,8 +158,7 @@ class Agent:
 
 
     #http://cgp.wikidot.com/circle-to-circle-collision-detection
-    def collision(self,other_agent):
-
+    def collision(self, other_agent):
         dx = self.x - other_agent.x
         dy = self.y - other_agent.y
         r = self.radius + other_agent.radius
@@ -171,21 +170,20 @@ class Agent:
         return False
 
 
-
     def returning_to_market(self):
         return not self.region.collidepoint((self.x,self.y))
 
-    def is_point_over_agent(self,point):
+    def is_point_over_agent(self, point):
         x,y = point
-        dx = self.x-x
-        dy = self.y-y
-        r = self.radius*self.radius
-        if (dx*dx)+(dy*dy)<r:
+        dx = self.x - x
+        dy = self.y - y
+        r = self.radius * self.radius
+        if (dx*dx) + (dy*dy) < r:
             return True
         return False
 
     def get_location(self):
-        return (int(round(self.x)),int(round(self.y)))
+        return (int(round(self.x)), int(round(self.y)))
 
 
 
