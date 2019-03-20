@@ -9,7 +9,6 @@ from ColorDefinitions import *
 
 SPEED = 3
 
-
 INITIAL_MAX_NUM_GOODS = 256
 INITIAL_MAX_PREFERENCE = 16
 INITIAL_MIN_NUM_GOODS = 128
@@ -74,17 +73,16 @@ class Agent:
 
     def bounce(self,other_agent):
         #calculate how to bounce the agents
-        distance = self.x-other_agent.x, self.y - other_agent.y
-        norm= math.sqrt(distance[0]**2 + distance[1]**2)
-        #possibility for fast inverse sqrt
+        distance = self.x - other_agent.x, self.y - other_agent.y
+        norm = math.sqrt(distance[0]**2 + distance[1]**2)
 
-        direction = distance[0]/norm,distance[1]/norm
+        direction = distance[0]/norm, distance[1]/norm
 
         #update new direction
         self.change_x = direction[0]*SPEED
         self.change_y = direction[1]*SPEED
 
-
+        #to other_agent new direction is the opposite of agent
         other_agent.change_x =- self.change_x
         other_agent.change_y =- self.change_y
 
@@ -96,11 +94,8 @@ class Agent:
         elif self.preference == "linear":
             return self.__get_utility_linear()
 
-    #linear, this can be a single return statement
     def __get_utility_linear(self):
-        utility = 0
-        utility += self.pref_apples*self.apples + self.pref_oranges*self.oranges
-        return utility
+        return self.pref_apples*self.apples + self.pref_oranges*self.oranges
 
     def __get_utility_cobb_douglass(self):
         return self.apples ** self.pref_apples + self.oranges ** self.pref_oranges

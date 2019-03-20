@@ -238,15 +238,18 @@ def settings_function(button):
         button_list.append(return_button)
 
     else:
+        update_markets = False
+        for input_box in setting_box_list:
+            if input_box.name == "rows " or input_box.name == "columns":
+                if not settings[input_box.name] == input_box.get_input():
+                    print(input_box.get_input())
+                    print(settings[input_box.name])
+                    update_markets = True
+            settings[input_box.name] = input_box.get_input()
+        if update_markets:
+            initialize_market()
         draw_agents(button.display)
         initalize_button_list(button.display)
-
-        #print("updating simulation settings")
-        for input_box in setting_box_list:
-            settings[input_box.name] = input_box.get_input()
-        #update markets, if row/columns have changed
-        #todo for now this is temporarily and it will clear all market data
-        initialize_market()
         wait = True
 
 def reset_function(button):
@@ -272,7 +275,7 @@ def return_function(button):
         try:
             box.buffer = [str(i) for i in str(settings[box.name])]
         except KeyError:
-            print("no key for setting_box",box.name)
+            print("no key for setting_box", box.name)
             print(box)
             continue
 
@@ -290,7 +293,7 @@ def step_function(button):
     move_agents()
     draw_agents(button.display)
     #draw graphs here
-
+    #TODO
 
 def region_function(button):
     global region_mode
@@ -310,10 +313,7 @@ def region_function(button):
     else:
         button.text = "Borders off"
         button.color = RED
-
-        #Do Borders by market? would use less memory compared to by agents
         new_region = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),1,1,settings["space"])[0][0]
-        #new_region = pygame.Rect(SINGLE_MARKET_BORDER)
 
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
@@ -398,8 +398,7 @@ def find_new_box(agent):
        return
 
 
-
-    #the loop can be unrolled here
+    #the loop can be unrolled and speed up here
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
@@ -437,10 +436,15 @@ def move_agents():
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
 
+                        market_list[row][column].trade(agent, other_agent)
+                        """
+                        Seems like this is unneccesarily
+                        #Randomize which agant is on which side in the trade
                         if random.getrandbits(1):
                             market_list[row][column].trade(agent, other_agent)
                         else:
                             market_list[row][column].trade(other_agent, agent)
+                        """
                         #only collide with one agent each timesetep
                         break
                 find_new_box(agent)
@@ -557,7 +561,6 @@ def initalize_button_list(display):
     button_list.append(graph_type_button)
 
 def create_input_box(name,rect,default_setting):
-
     box = TextBox.TextBox(rect)
     box.name = name
     try:
@@ -597,7 +600,7 @@ def initialize_setting_box_list():
     setting_box_list.append(set_rows)
     setting_box_list.append(set_space)
 
-#reset the utility_tracker's here? would fix bug when changing settings for line graph
+
 def initialize_market():
     global market_list
     global settings
@@ -605,12 +608,11 @@ def initialize_market():
     global raw_utility_grapher
     global raw_utility_grapher_x
 
-    r=settings["rows"]
-    c=settings["columns"]
-    s=settings["space"]
+    r = settings["rows"]
+    c = settings["columns"]
+    s = settings["space"]
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
-
 
     raw_utility_grapher = deque(maxlen = num_visible_data_points)
     raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
@@ -704,6 +706,7 @@ def main():
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 30)
+    button_font = pygame.font.Font("freesansbold.ttf",20)
 
     #rename?
     text = TextBox.TextBox((BUTTON_X+2*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
@@ -720,7 +723,9 @@ def main():
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run=False
+                run = False
+                break
+            #A button was pressed
             #https://www.pygame.org/docs/ref/key.html
             elif event.type == pygame.KEYDOWN:
 
@@ -730,21 +735,20 @@ def main():
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
-                    wait=not wait
+                    wait = not wait
 
-                #check if input box is active
+                #check if input box (text) is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
                         create_many_agents(display,text.execute(),graph)
 
-                    #Delete last input
+                    #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
                         if text.buffer:
                             text.buffer.pop()
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in text.ACCEPTED:
                         text.buffer.append(event.unicode)
-
 
                 elif change_simulation_settings:
                     for input_box in setting_box_list:
@@ -777,31 +781,30 @@ def main():
                             break
 
 
-
             #left mouse click
             elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
                 #get mouse position
                 mouse = pygame.mouse.get_pos()
                 text.active = text.rect.collidepoint(mouse)
 
-                #check if the mouse is above a button, if it is execute that button
-                for b in button_list:
-                    r = pygame.Rect(b.getRect())
-                    if r.collidepoint(mouse):
-                        b.execute()
-                        break
+               #if the mouse is above the input box it is not above anything else
+                if not text.active:
+                    #check if the mouse is above a button, if it is execute that button
+                    for b in button_list:
+                        r = pygame.Rect(b.getRect())
+                        if r.collidepoint(mouse):
+                            b.execute()
+                            break
 
-                #if chaninging simulation settings, update if a input box is active
-                if change_market_settings:
-                    for input_box in default_box_list:
-                        input_box.active = input_box.rect.collidepoint(mouse)
-                #if chaninging market settings, update if a input box is active
-                elif change_simulation_settings:
-                    for input_box in setting_box_list:
-                        input_box.active = input_box.rect.collidepoint(mouse)
+                    #if chaninging simulation settings, update if a input box is active
+                    if change_market_settings:
+                        for input_box in default_box_list:
+                            input_box.active = input_box.rect.collidepoint(mouse)
+                    #if chaninging market settings, update if a input box is active
+                    elif change_simulation_settings:
+                        for input_box in setting_box_list:
+                            input_box.active = input_box.rect.collidepoint(mouse)
 
-                #if the mouse is above the input box it is not above anything else
-                elif not text.active:
                     #check if the mouse is above an agent
                     for row in range(len(market_list)):
                         for column in range(len(market_list[row])):
@@ -809,13 +812,14 @@ def main():
                             if market_list[row][column].region.collidepoint(mouse):
                                 market_clicked(market_list[row][column], mouse, display)
                                 break
+        #end of event loop
 
         if change_simulation_settings:
             for input_box in setting_box_list:
                 input_box.update()
                 input_box.draw(display)
 
-                textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
+                textSurf, textRect = text_objects(input_box.name, button_font)
                 textRect.midright = input_box.rect.midleft
                 textRect.x -= 5
                 display.blit(textSurf, textRect)
@@ -825,12 +829,13 @@ def main():
                 input_box.update()
                 input_box.draw(display)
 
-                textSurf, textRect = text_objects(input_box.name, pygame.font.Font("freesansbold.ttf",20))
+                textSurf, textRect = text_objects(input_box.name, button_font)
                 textRect.midright = input_box.rect.midleft
                 textRect.x -= 5
                 display.blit(textSurf, textRect)
         else:
             if wait:
+                #TODO move this to the wait button
                 button_list[1].color = GREEN
                 button_list[1].text = "Start"
 
@@ -856,17 +861,10 @@ def main():
 
         fps = font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
-        """
-        y = 100
-        for row in range(len(market_list)):
-            for column in range(len(market_list[row])):
-                u = font.render(str(market_list[row][column].price),True,BLACK)
-                display.blit(u,(850,y))
-                y += 50
-        """
 
-        u = font.render(("Current Utility: "+str(get_utility())),True,BLACK)
-        display.blit(u,(RIGTH_BORDER ,750))
+
+        u = font.render("Current Utility: {:0.2f}".format(get_utility()), True, BLACK)
+        display.blit(u,(RIGTH_BORDER, 750))
 
         #update graph
         time = pygame.time.get_ticks()
@@ -880,7 +878,7 @@ def main():
         #60 Frames per second
         clock.tick(60)
 
-        #update the screen
+        #update the enitre screen
         pygame.display.flip()
 
 
@@ -890,5 +888,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
