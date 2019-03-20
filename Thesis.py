@@ -37,7 +37,6 @@ market_list = [[]]
 button_list = []
 setting_box_list = []
 default_box_list = []
-wait = True
 change_simulation_settings = False
 change_market_settings = False
 button_font = None
@@ -49,14 +48,17 @@ settings = {
             "update interval": 10,
             "visible data points": 2000,
             "speed multiplier": 1,
-            "region_mode": True
+            "region_mode": True,
+            "wait": True
             }
 
 defaults = {
             "radius" : 10,
             "show trade": 0,
             "random_num_goods": True,
-            "preference": "normal"
+            "preference": "normal",
+            "apples": 50,
+            "oranges": 50
             }
 
 #possible preferences:
@@ -147,8 +149,8 @@ def load_function(button):
     global settings
     global time_step_num_tracker
     global utility_tracker
-    global wait
-    wait = True
+
+    settings["wait"] = True
     button.display.fill(WHITE)
     try:
         load_list = pickle.load(open("save.p","rb"))
@@ -232,7 +234,7 @@ def settings_function(button):
     global button_list
     global market_list
     global setting_box_list
-    global wait
+    global settings
 
     change_simulation_settings = not change_simulation_settings
     button.display.fill(WHITE)
@@ -255,9 +257,11 @@ def settings_function(button):
             initialize_market()
         draw_agents(button.display)
         initalize_button_list(button.display)
-        wait = True
+        settings["wait"] = True
 
 def reset_function(button):
+    global settings
+    settings["wait"] = True
     clear()
     button.display.fill(WHITE)
     initialize_market()
@@ -270,7 +274,7 @@ def return_function(button):
 
     change_simulation_settings = False
     change_market_settings = False
-    button_list=[]
+    button_list = []
     initalize_button_list(button.display)
     button.display.fill(WHITE)
     draw_agents(button.display)
@@ -286,13 +290,13 @@ def return_function(button):
 
 
 def pause_function(button):
-    global wait
-    wait = not wait
+    global settings
+    settings["wait"] = not settings["wait"]
 
 
 def step_function(button):
-    global wait
-    wait = True
+    global settings
+    settings["wait"] = True
     button.color = LIME_GREEN
     button.display.fill(WHITE)
     move_agents()
@@ -491,12 +495,12 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(display,region,radius,preference):
+def new_agent_in_region(display, region, radius, preference, apples, oranges):
     global initial_utility
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,num_agents+1,radius,preference)
+        agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges)
         agent.box = set_box(agent)
 
         if not on_top_of_other_agent(agent):
@@ -510,7 +514,7 @@ def new_agent_in_region(display,region,radius,preference):
     return None
 
 
-def create_many_agents(display, num, graph):
+def create_many_agents(display, num):
     global num_agents
     global market_list
     global initial_utility
@@ -520,16 +524,16 @@ def create_many_agents(display, num, graph):
             region = market_list[row][column].region
             radius = market_list[row][column].settings["radius"]
             preference = market_list[row][column].settings["preference"]
+            apples = market_list[row][column].settings["apples"]
+            oranges = market_list[row][column].settings["oranges"]
             for i in range(num):
-                agent = new_agent_in_region(display,region,radius,preference)
+                agent = new_agent_in_region(display, region, radius, preference, apples, oranges)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
                     if not radius == agent.radius:
                         print("radius should be:",radius)
                         print("radius is ",agent.radius)
                         print("market",row,column)
-
-    graph.ylim_min = initial_utility
     print(num_agents," number agents")
 
 def initalize_button_list(display):
@@ -563,12 +567,12 @@ def initialize_defaults_box_list():
     global defaults
 
     y_space = 5
-    names = ["radius", "show trade", "preference"]
+    names = ["preference", "radius", "show trade", "apples", "oranges"]
     x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
     for i in range(len(names)):
         box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), defaults)
         default_box_list.append(box)
-    default_box_list[-1].ACCEPTED = string.ascii_lowercase
+    default_box_list[0].ACCEPTED = string.ascii_lowercase
 
 def initialize_setting_box_list():
     global setting_box_list
@@ -600,8 +604,7 @@ def initialize_market():
     utility_tracker = deque(maxlen = num_data_points)
     time_step_num_tracker = deque(maxlen = num_data_points)
 
-def market_clicked(market, mouse, display):
-    global wait
+def market_clicked(market, mouse, display, wait):
 
     for agent in market.agents:
         if agent.is_point_over_agent(mouse):
@@ -681,7 +684,6 @@ def update_graph(key, market_list, graph):
 
 
 def main():
-    global wait
     global change_simulation_settings
     global change_market_settings
     global setting_box_list
@@ -707,7 +709,7 @@ def main():
     initalize_button_list(display)
 
     graph = Graph.Graph("scatter")
-
+    graph.ylim_min = initial_utility
 
     run = True
     while run:
@@ -721,16 +723,16 @@ def main():
 
                 #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
-                    create_many_agents(display,1,graph)
+                    create_many_agents(display, 1)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
-                    wait = not wait
+                    settings["wait"] = not settings["wait"]
 
                 #check if input box (text) is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(display,text.execute(),graph)
+                        create_many_agents(display, text.execute())
 
                     #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
@@ -800,7 +802,7 @@ def main():
                             for column in range(len(market_list[row])):
                                 #check if market is clicked before looping over agents
                                 if market_list[row][column].region.collidepoint(mouse):
-                                    market_clicked(market_list[row][column], mouse, display)
+                                    market_clicked(market_list[row][column], mouse, display, settings["wait"])
                                     break
         #end of event loop
 
@@ -824,8 +826,8 @@ def main():
                 textRect.x -= 5
                 display.blit(textSurf, textRect)
         else:
-            if wait:
-                #TODO move this to settings
+            if settings["wait"]:
+                #TODO move this
                 button_list[0].color = GREEN
                 button_list[0].text = "Start"
 

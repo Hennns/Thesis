@@ -47,23 +47,23 @@ class Agent:
 
 
     #Initialize variables
-    def __init__(self, region, ID, radius, preference):
+    def __init__(self, region, ID, radius, preference, apples, oranges):
 
         self.region = pygame.Rect(region)
         self.id = ID
         self.color = BLUE
         self.radius = radius
         self.is_selected = False
-        self.apples = 50
-        self.oranges = 50
+        self.apples = apples
+        self.oranges = oranges
 
         self.preference = preference
         self.create_preferences()
 
         self.box = (0,0)
 
-        self.x = random.randrange(self.radius+self.region.left, self.region.right-self.radius)
-        self.y = random.randrange(self.radius+self.region.top, self.region.bottom-self.radius)
+        self.x = random.randrange(self.radius + self.region.left, self.region.right - self.radius)
+        self.y = random.randrange(self.radius + self.region.top, self.region.bottom - self.radius)
 
         angle = random.uniform(0,2*math.pi)
         self.change_x = math.cos(angle) * SPEED
