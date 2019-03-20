@@ -49,7 +49,9 @@ settings = {
             "rows": 1,
             "columns": 1,
             "space": 20,
-            "update interval": 10
+            "update interval": 10,
+            "visible data points": 2000,
+            "speed multiplier": 1
             }
 
 defaults = {
@@ -89,19 +91,14 @@ SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
 num_agents = 0
 num_time_steps = 1
-
-
-
 initial_utility = 1
 
-#This is the new ones used, they can be renamed
-#Make this a setting?
-num_visible_data_points = 2000
+
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
-raw_utility_grapher = deque(maxlen = num_visible_data_points)
-raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
+raw_utility_grapher = deque(maxlen = settings["visible data points"])
+raw_utility_grapher_x = deque(maxlen = settings["visible data points"])
 
 
 
@@ -134,7 +131,7 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
-
+#give graph as varaible!
 def graph_type_function(button):
     if button.text == "scatter":
         button.text = "line"
@@ -198,7 +195,7 @@ def market_settings_function(button):
                 for column in range(len(market_list[row])):
                     for input_box in default_box_list:
                         #print("updating settings in market",row,column)
-                        market_list[row][column].settings[input_box.name]=input_box.get_input()
+                        market_list[row][column].settings[input_box.name] = input_box.get_input()
                         #same as below
                         #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
                         #    for agent in market_list[row][column].agents:
@@ -241,10 +238,8 @@ def settings_function(button):
     else:
         update_markets = False
         for input_box in setting_box_list:
-            if input_box.name == "rows " or input_box.name == "columns":
+            if input_box.name == "rows" or input_box.name == "columns":
                 if not settings[input_box.name] == input_box.get_input():
-                    print(input_box.get_input())
-                    print(settings[input_box.name])
                     update_markets = True
             settings[input_box.name] = input_box.get_input()
         if update_markets:
@@ -289,7 +284,7 @@ def pause_function(button):
 def step_function(button):
     global wait
     wait = True
-    button.color=LIME_GREEN
+    button.color = LIME_GREEN
     button.display.fill(WHITE)
     move_agents()
     draw_agents(button.display)
@@ -362,7 +357,7 @@ def set_box(agent):
     print("box not found")
 
 #the ask for forgivness approach tested to be faster than ask for permission
-def get_nearby_agents(current_r,current_c):
+def get_nearby_agents(current_r, current_c):
     global box_tracker
     nearby_agents = []
     for r in range(-1,2):
@@ -419,13 +414,12 @@ def move_agents():
     global raw_utility_grapher_x
     global setting_box_list
 
-    num_time_steps += 1
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
-
+    num_time_steps += 1
     update = num_time_steps % settings["update interval"] == 0
 
     if update:
-        raw_utility_grapher.append(get_utility())
+        raw_utility_grapher.append(get_total_utility(market_list))
         raw_utility_grapher_x.append(num_time_steps)
 
     for row in range(len(market_list)):
@@ -439,7 +433,7 @@ def move_agents():
 
                         market_list[row][column].trade(agent, other_agent)
                         """
-                        Seems like this is unneccesarily
+                        Seems like this is unneccesarily due to code in market.py
                         #Randomize which agant is on which side in the trade
                         if random.getrandbits(1):
                             market_list[row][column].trade(agent, other_agent)
@@ -456,8 +450,7 @@ def move_agents():
                 market_list[row][column].num_trades = 1
 
 #market_list does not need to be global for this function!!
-def get_utility():
-    global market_list
+def get_total_utility(market_list):
     utility=0
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
@@ -574,7 +567,7 @@ def initialize_setting_box_list():
     global settings
 
     y_space = 5
-    names = ["rows", "columns", "space", "update interval"]
+    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier"]
     x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
     for i in range(len(names)):
         box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
@@ -591,11 +584,13 @@ def initialize_market():
     r = settings["rows"]
     c = settings["columns"]
     s = settings["space"]
-    agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-    market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults) for row in range(r)] for column in range(c)]
+    num_data_points = settings["visible data points"]
 
-    raw_utility_grapher = deque(maxlen = num_visible_data_points)
-    raw_utility_grapher_x = deque(maxlen = num_visible_data_points)
+    agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
+    market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults, num_data_points) for row in range(r)] for column in range(c)]
+
+    raw_utility_grapher = deque(maxlen = num_data_points)
+    raw_utility_grapher_x = deque(maxlen = num_data_points)
 
 def market_clicked(market, mouse, display):
     global wait
@@ -635,6 +630,8 @@ def update_graph(key, market_list, graph):
     if key == "line":
         graph.plot_type = "line"
         graph.title = "Utility over time"
+        graph.x_label = "Number of time steps"
+        graph.y_label = "Utility"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
@@ -642,6 +639,8 @@ def update_graph(key, market_list, graph):
 
     elif key == "scatter":
             graph.title = "Allocation of goods for each agent"
+            graph.x_label = "Number of Apples"
+            graph.y_label = "Number of Oranges"
             #plot budget line
             a_list = []
             b_list = []
@@ -662,6 +661,8 @@ def update_graph(key, market_list, graph):
     elif key == "price":
         graph.plot_type = "scatter" #scatter or line??? Ask Mayer
         graph.title = "Price over time"
+        graph.x_label = "Number of time steps"
+        graph.y_label = "Price for [apple/orange]"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
@@ -785,14 +786,14 @@ def main():
                     elif change_simulation_settings:
                         for input_box in setting_box_list:
                             input_box.active = input_box.rect.collidepoint(mouse)
-
-                    #check if the mouse is above an agent
-                    for row in range(len(market_list)):
-                        for column in range(len(market_list[row])):
-                            #check if market is clicked before looping over agents
-                            if market_list[row][column].region.collidepoint(mouse):
-                                market_clicked(market_list[row][column], mouse, display)
-                                break
+                    else:
+                        #check if the mouse is above an agent
+                        for row in range(len(market_list)):
+                            for column in range(len(market_list[row])):
+                                #check if market is clicked before looping over agents
+                                if market_list[row][column].region.collidepoint(mouse):
+                                    market_clicked(market_list[row][column], mouse, display)
+                                    break
         #end of event loop
 
         if change_simulation_settings:
@@ -828,32 +829,34 @@ def main():
                 button_list[0].text = "Pause"
                 button_list[2].color = GREEN
 
+                if settings["speed multiplier"] > 1:
+                    for i in range(settings["speed multiplier"]):
+                        move_agents()
+
             draw_markets(display)
 
             #draw the input box
             text.update()
             text.draw(display)
 
+            #draw current utility
+            u = font.render("Current Utility: {:0.2f}".format(get_total_utility(market_list)), True, BLACK)
+            display.blit(u,(RIGTH_BORDER, 750))
+
+            #update graph
+            time = pygame.time.get_ticks()
+            if time >= graph.last_update_time + graph.update_delta:
+                graph.last_update_time = time
+                update_graph(button_list[-1].text, market_list, graph)
+            #draw the graph
+            display.blit(graph.get_graph_as_image(), (RIGTH_BORDER,150))
+
         #draw the buttons
         for b in button_list:
             b.draw_button()
 
-
-
         fps = font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
-
-
-        u = font.render("Current Utility: {:0.2f}".format(get_utility()), True, BLACK)
-        display.blit(u,(RIGTH_BORDER, 750))
-
-        #update graph
-        time = pygame.time.get_ticks()
-        if time >= graph.last_update_time + graph.update_delta:
-            graph.last_update_time = time
-            update_graph(button_list[-1].text, market_list, graph)
-        #draw the graph
-        display.blit(graph.get_graph_as_image(),(RIGTH_BORDER,150))
 
 
         #60 Frames per second

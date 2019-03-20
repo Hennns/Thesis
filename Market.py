@@ -8,7 +8,7 @@ from ColorDefinitions import *
 
 class Market:
 
-    def __init__(self, region, color, settings):
+    def __init__(self, region, color, settings, num_data_points):
         self.color = color
         self.is_selected = False
         self.region = region
@@ -19,8 +19,8 @@ class Market:
         self.settings = settings.copy()
         #need to use copy since settings is just the defualts settings and we
         #do not want to change defaults when changeing the settings in a market
-        self.utility_tracker = deque(maxlen = 2000)
-        self.price_tracker = deque(maxlen = 2000)
+        self.utility_tracker = deque(maxlen = num_data_points)
+        self.price_tracker = deque(maxlen = num_data_points)
 
     def get_price(self):
         if self.num_trades > 1:
@@ -49,11 +49,11 @@ class Market:
 
         if show_trade:
             if traded:
-                agent.color=LIME_GREEN
-                other_agent.color=LIME_GREEN
+                agent.color = LIME_GREEN
+                other_agent.color = LIME_GREEN
             else:
-                agent.color=RED
-                other_agent.color=RED
+                agent.color = RED
+                other_agent.color = RED
 
 
     #always trade 1 apple
