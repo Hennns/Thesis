@@ -13,8 +13,8 @@ import pygame
 class Graph():
 
     def __init__(self,plot_type):
-        self.fig = pylab.figure(figsize=[5, 5], # Inches
-                           dpi=100,        # number of dots per inch
+        self.fig = pylab.figure(figsize = [5, 5], # Inches
+                           dpi = 100,        # number of dots per inch
                            )
 
 
@@ -31,19 +31,16 @@ class Graph():
 
 
 
-
     def get_graph_as_image(self):
         return self.surf
 
 
     def plot(self, x_list, y_list):
-        #self.fig.clf()
         #gca = get current axis
         ax = self.fig.gca()
 
         if self.plot_type == "line":
             ax.plot(x_list, y_list)
-
             #ax.set_ylim(ymin = self.ylim_min)
         elif self.plot_type == "scatter":
             ax.scatter(x_list, y_list) #add label
