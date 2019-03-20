@@ -7,10 +7,10 @@ from ColorDefinitions import *
 #Make this into pygame rect?
 class button:
 
-    def __init__(self,x,y,color,text,font,display,function):
+    def __init__(self, x, y, color, text, font, display, function, width, heigth):
         pygame.init()
-        self.width = 110
-        self.heigth = 60
+        self.width = width
+        self.heigth = heigth
         self.x = x
         self.y = y
         self.color = color
@@ -30,7 +30,7 @@ class button:
             self.display.blit(textSurf, textRect)
 
     def getRect(self):
-        return (self.x,self.y,self.width,self.heigth)
+        return (self.x, self.y, self.width, self.heigth)
 
     def execute(self):
         self.function(self)
