@@ -64,14 +64,14 @@ class Market:
 
         #Agent want apples more than other agent
         if mrs_agent > mrs_other_agent:
-            if random() < 0.5:
+            if random() < 0.5 or True:
                 return self.trade_apple_for_oranges(agent, other_agent)
             return self.trade_orange_for_apple(other_agent, agent)
         if mrs_agent == mrs_other_agent:
             return False
 
         #other_agent want apples more than agent
-        if random() < 0.5:
+        if random() < 0.5 or True:
             return self.trade_apple_for_oranges(other_agent, agent)
         return self.trade_orange_for_apple(agent, other_agent)
 

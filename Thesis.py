@@ -42,16 +42,14 @@ change_simulation_settings = False
 change_market_settings = False
 button_font = None
 
-#move region_mode into settings? TODO
-region_mode = True
-
 settings = {
             "rows": 1,
             "columns": 1,
             "space": 20,
             "update interval": 10,
             "visible data points": 2000,
-            "speed multiplier": 1
+            "speed multiplier": 1,
+            "region_mode": True
             }
 
 defaults = {
@@ -97,8 +95,8 @@ initial_utility = 1
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
-raw_utility_grapher = deque(maxlen = settings["visible data points"])
-raw_utility_grapher_x = deque(maxlen = settings["visible data points"])
+utility_tracker = deque(maxlen = settings["visible data points"])
+time_step_num_tracker = deque(maxlen = settings["visible data points"])
 
 
 
@@ -146,11 +144,18 @@ def graph_type_function(button):
 #add ability to load other data too, like settings
 def load_function(button):
     global market_list
+    global settings
+    global time_step_num_tracker
+    global utility_tracker
     global wait
     wait = True
     button.display.fill(WHITE)
     try:
-        market_list = pickle.load(open("save.p","rb"))
+        load_list = pickle.load(open("save.p","rb"))
+        market_list = load_list[0]
+        settings = load_list[1]
+        time_step_num_tracker = load_list[2]
+        utility_tracker = load_list[3]
     except FileNotFoundError:
         print("saved file not fond")
 
@@ -158,8 +163,12 @@ def load_function(button):
 
 def save_function(button):
     global market_list
-    pickle.dump(market_list, open("save.p","wb"))
+    global settings
+    global time_step_num_tracker
+    global utility_tracker
 
+    dump_list = [market_list, settings, time_step_num_tracker, utility_tracker]
+    pickle.dump(dump_list, open("save.p", "wb"))
 
 
 def market_settings_function(button):
@@ -292,13 +301,12 @@ def step_function(button):
     #TODO
 
 def region_function(button):
-    global region_mode
     global market_list
     global SINGLE_MARKET_BORDER
     global settings
-    region_mode = not region_mode
+    settings["region_mode"] = not settings["region_mode"]
 
-    if region_mode:
+    if settings["region_mode"]:
         button.text = "Borders on"
         button.color = GREEN
 
@@ -330,14 +338,14 @@ def clear():
     global market_list
     global initial_utility
     global num_agents
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global utility_tracker
+    global time_step_num_tracker
 
     initial_utility = 1
     num_agents = 0
     market_list = [[]]
-    raw_utility_grapher.clear()
-    raw_utility_grapher_x.clear()
+    utility_tracker.clear()
+    time_step_num_tracker.clear()
 
 
 #If the current box is unknown, finds the correct box
@@ -410,8 +418,8 @@ def move_agents():
     global box_tracker
     global market_list
     global num_time_steps
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global utility_tracker
+    global time_step_num_tracker
     global setting_box_list
 
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
@@ -419,8 +427,8 @@ def move_agents():
     update = num_time_steps % settings["update interval"] == 0
 
     if update:
-        raw_utility_grapher.append(get_total_utility(market_list))
-        raw_utility_grapher_x.append(num_time_steps)
+        utility_tracker.append(get_total_utility(market_list))
+        time_step_num_tracker.append(num_time_steps)
 
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
@@ -578,8 +586,8 @@ def initialize_market():
     global market_list
     global settings
     global defaults
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global utility_tracker
+    global time_step_num_tracker
 
     r = settings["rows"]
     c = settings["columns"]
@@ -589,8 +597,8 @@ def initialize_market():
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
     market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults, num_data_points) for row in range(r)] for column in range(c)]
 
-    raw_utility_grapher = deque(maxlen = num_data_points)
-    raw_utility_grapher_x = deque(maxlen = num_data_points)
+    utility_tracker = deque(maxlen = num_data_points)
+    time_step_num_tracker = deque(maxlen = num_data_points)
 
 def market_clicked(market, mouse, display):
     global wait
@@ -635,7 +643,7 @@ def update_graph(key, market_list, graph):
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
-                graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
+                graph.plot(time_step_num_tracker, list(market_list[row][column].utility_tracker))
 
     elif key == "scatter":
             graph.title = "Allocation of goods for each agent"
@@ -666,7 +674,7 @@ def update_graph(key, market_list, graph):
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
-                graph.plot(raw_utility_grapher_x, list(market_list[row][column].price_tracker))
+                graph.plot(time_step_num_tracker, list(market_list[row][column].price_tracker))
 
     graph.set_legend(label)
     graph.update_graph()
@@ -677,7 +685,7 @@ def main():
     global change_simulation_settings
     global change_market_settings
     global setting_box_list
-    global region_mode #Don't need this to be a global variable
+    global settings
     global market_list
     global initial_utility
     global button_font
@@ -817,7 +825,7 @@ def main():
                 display.blit(textSurf, textRect)
         else:
             if wait:
-                #TODO move this to the wait button
+                #TODO move this to settings
                 button_list[0].color = GREEN
                 button_list[0].text = "Start"
 
