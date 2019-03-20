@@ -175,7 +175,7 @@ def market_settings_function(button):
     if change_market_settings:
         button.text = "Apply"
         button.x = BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE)
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function,  BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
         button_list.append(return_button)
 
@@ -231,7 +231,7 @@ def settings_function(button):
     button_list=[]
     if change_simulation_settings:
         button.text = "Apply"
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
         button_list.append(return_button)
 
@@ -536,7 +536,7 @@ def initalize_button_list(display):
     #The input box is at the BUTTON_X spot, so that is skipped by adding x
     x = BUTTON_WIDTH + BUTTON_SPACE
     for i in range(len(names)):
-        button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i])
+        button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
 
 def create_input_box(name, rect, default_setting):
