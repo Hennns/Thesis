@@ -49,7 +49,8 @@ settings = {
             "visible data points": 2000,
             "speed multiplier": 1,
             "region_mode": True,
-            "wait": True
+            "wait": True,
+            "avoid overlapping agents": True
             }
 
 defaults = {
@@ -103,7 +104,7 @@ time_step_num_tracker = deque(maxlen = settings["visible data points"])
 
 
 #devides a pygame.Rect into multiple smaller Rects
-def divide_rect(rectangle,rows,columns,space):
+def divide_rect(rectangle, rows, columns, space):
     height = int(rectangle.height/rows)
     width = int(rectangle.width/columns)
     r_y = rectangle.y
@@ -142,8 +143,6 @@ def graph_type_function(button):
         button.text = "scatter"
 
 
-
-#add ability to load other data too, like settings
 def load_function(button):
     global market_list
     global settings
@@ -182,10 +181,10 @@ def market_settings_function(button):
     change_market_settings = not change_market_settings
     button.display.fill(WHITE)
 
-    button_list=[]
+    button_list = []
     if change_market_settings:
         button.text = "Apply"
-        button.x = BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE)
+        button.x = BUTTON_X + 5*(BUTTON_WIDTH+BUTTON_SPACE)
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function,  BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
         button_list.append(return_button)
@@ -239,7 +238,7 @@ def settings_function(button):
     change_simulation_settings = not change_simulation_settings
     button.display.fill(WHITE)
 
-    button_list=[]
+    button_list = []
     if change_simulation_settings:
         button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -364,9 +363,9 @@ def set_box(agent):
     for row in range(len(BOX_MAP)):
         for col in range(len(BOX_MAP[row])):
             print(BOX_MAP[row][col])
-    print(x)
-    print(y)
+    agent.print_info()
     print("box not found")
+    return (0,0)
 
 #the ask for forgivness approach tested to be faster than ask for permission
 def get_nearby_agents(current_r, current_c):
@@ -397,8 +396,8 @@ def get_nearby_boxes(current_r,current_c):
 def find_new_box(agent):
     global box_tracker
 
-    r,c=agent.box
-    x,y=agent.get_location()
+    r,c = agent.box
+    x,y = agent.get_location()
 
     #Check the old box first, since the agent is most likely there
     if BOX_MAP[r][c].collidepoint(x,y):
@@ -410,11 +409,13 @@ def find_new_box(agent):
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
-            agent.box=(row,col)
+            agent.box = (row,col)
             #print("new box is ",row,col)
             return
-    #This should never happen
+    #This should never happen, but if it does try to set_box again
     print("could not find new box")
+    agent.box = set_box(agent)
+
 # In[5]:
 
 
@@ -461,7 +462,6 @@ def move_agents():
                 market_list[row][column].price = 0
                 market_list[row][column].num_trades = 1
 
-#market_list does not need to be global for this function!!
 def get_total_utility(market_list):
     utility=0
     for row in range(len(market_list)):
@@ -495,7 +495,7 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(display, region, radius, preference, apples, oranges):
+def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp):
     global initial_utility
     global num_agents
 
@@ -503,14 +503,12 @@ def new_agent_in_region(display, region, radius, preference, apples, oranges):
         agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges)
         agent.box = set_box(agent)
 
-        if not on_top_of_other_agent(agent):
+        if not overlapp or not on_top_of_other_agent(agent):
             find_new_box(agent)
             agent.draw(display)
             initial_utility += agent.get_utility()
             num_agents += 1
-
             return agent
-
     return None
 
 
@@ -518,7 +516,9 @@ def create_many_agents(display, num):
     global num_agents
     global market_list
     global initial_utility
+    global settings
 
+    overlapp = settings["avoid overlapping agents"]
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             region = market_list[row][column].region
@@ -527,7 +527,7 @@ def create_many_agents(display, num):
             apples = market_list[row][column].settings["apples"]
             oranges = market_list[row][column].settings["oranges"]
             for i in range(num):
-                agent = new_agent_in_region(display, region, radius, preference, apples, oranges)
+                agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
                     if not radius == agent.radius:
@@ -545,7 +545,7 @@ def initalize_button_list(display):
     functions = [pause_function, reset_function, step_function, region_function,
      settings_function, screenshot_function, save_function, market_settings_function, load_function, graph_type_function]
 
-    #The input box is at the BUTTON_X spot, so that is skipped by adding x
+    #The input box is at the BUTTON_X spot, so that is skipped (by adding x)
     x = BUTTON_WIDTH + BUTTON_SPACE
     for i in range(len(names)):
         button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -652,6 +652,7 @@ def update_graph(key, market_list, graph):
             graph.title = "Allocation of goods for each agent"
             graph.x_label = "Number of Apples"
             graph.y_label = "Number of Oranges"
+            """
             #plot budget line
             a_list = []
             b_list = []
@@ -661,6 +662,7 @@ def update_graph(key, market_list, graph):
             graph.plot_type = "line"
             graph.plot(a_list,b_list)
             label.append("initial budget line")
+            """
             graph.plot_type = "scatter"
 
             for row in range(len(market_list)):
@@ -693,7 +695,7 @@ def main():
     global button_font
 
     pygame.init()
-    display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
+    display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
     display.fill(WHITE)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
@@ -701,7 +703,7 @@ def main():
     button_font = pygame.font.Font("freesansbold.ttf",20)
 
     #rename?
-    text = TextBox.TextBox((BUTTON_X,BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
+    text = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
 
     initialize_market()
     initialize_setting_box_list()
