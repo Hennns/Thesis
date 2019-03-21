@@ -30,12 +30,11 @@ class Agent:
 
     def create_preferences(self):
         if self.preference == "normal":
-            #self.pref_apples = float(random.randint(1,9)) / 10
+
             #avoid getting 0 or 1
             self.pref_apples = random.random()
             while(not self.pref_apples):
                 self.pref_apples = random.random()
-            self.pref_apples = 0.5
             self.pref_oranges = 1 - self.pref_apples
 
             return
@@ -70,7 +69,7 @@ class Agent:
 
         self.update_color()
 
-    def bounce(self,other_agent):
+    def bounce(self, other_agent):
         #calculate how to bounce the agents
         distance = self.x - other_agent.x, self.y - other_agent.y
         norm = math.sqrt(distance[0]**2 + distance[1]**2)
