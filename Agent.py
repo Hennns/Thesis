@@ -35,9 +35,8 @@ class Agent:
             self.pref_apples = random.random()
             while(not self.pref_apples):
                 self.pref_apples = random.random()
-
-            self.pref_oranges = 1-self.pref_apples
-
+            self.pref_apples = 0.5
+            self.pref_oranges = 1 - self.pref_apples
 
             return
         elif self.preference =="linear":
