@@ -30,14 +30,12 @@ class Agent:
 
     def create_preferences(self):
         if self.preference == "normal":
-            #self.pref_apples = float(random.randint(1,9)) / 10
+
             #avoid getting 0 or 1
             self.pref_apples = random.random()
             while(not self.pref_apples):
                 self.pref_apples = random.random()
-
-            self.pref_oranges = 1-self.pref_apples
-
+            self.pref_oranges = 1 - self.pref_apples
 
             return
         elif self.preference =="linear":
@@ -47,23 +45,23 @@ class Agent:
 
 
     #Initialize variables
-    def __init__(self, region, ID, radius, preference):
+    def __init__(self, region, ID, radius, preference, apples, oranges):
 
         self.region = pygame.Rect(region)
         self.id = ID
         self.color = BLUE
         self.radius = radius
         self.is_selected = False
-        self.apples = 50
-        self.oranges = 50
+        self.apples = apples
+        self.oranges = oranges
 
         self.preference = preference
         self.create_preferences()
 
         self.box = (0,0)
 
-        self.x = random.randrange(self.radius+self.region.left, self.region.right-self.radius)
-        self.y = random.randrange(self.radius+self.region.top, self.region.bottom-self.radius)
+        self.x = random.randrange(self.radius + self.region.left, self.region.right - self.radius)
+        self.y = random.randrange(self.radius + self.region.top, self.region.bottom - self.radius)
 
         angle = random.uniform(0,2*math.pi)
         self.change_x = math.cos(angle) * SPEED
@@ -71,7 +69,7 @@ class Agent:
 
         self.update_color()
 
-    def bounce(self,other_agent):
+    def bounce(self, other_agent):
         #calculate how to bounce the agents
         distance = self.x - other_agent.x, self.y - other_agent.y
         norm = math.sqrt(distance[0]**2 + distance[1]**2)

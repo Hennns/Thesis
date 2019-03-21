@@ -61,6 +61,8 @@ class Market:
         mrs_agent = agent.get_mrs_apples()
         mrs_other_agent = other_agent.get_mrs_apples()
 
+        #This part makes it hard to track price
+        #track two seperate prices??
 
         #Agent want apples more than other agent
         if mrs_agent > mrs_other_agent:

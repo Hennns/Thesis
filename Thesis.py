@@ -6,6 +6,7 @@ import string
 import pickle
 from collections import deque
 import datetime
+import random
 
 #Make window appear centered
 import os
@@ -37,13 +38,9 @@ market_list = [[]]
 button_list = []
 setting_box_list = []
 default_box_list = []
-wait = True
 change_simulation_settings = False
 change_market_settings = False
 button_font = None
-
-#move region_mode into settings? TODO
-region_mode = True
 
 settings = {
             "rows": 1,
@@ -51,14 +48,21 @@ settings = {
             "space": 20,
             "update interval": 10,
             "visible data points": 2000,
-            "speed multiplier": 1
+            "speed multiplier": 1,
+            "region_mode": True,
+            "wait": True,
+            "avoid overlapping agents": True
             }
 
-defaults = {
+market_settings = {
             "radius" : 10,
             "show trade": 0,
             "random_num_goods": True,
-            "preference": "normal"
+            "preference": "normal",
+            "apples": 50,
+            "oranges": 50,
+            "apple preference": 0,
+            "orange preference": 0
             }
 
 #possible preferences:
@@ -97,13 +101,13 @@ initial_utility = 1
 
 #Documnetation for deque
 #https://docs.python.org/2/library/collections.html#collections.deque
-raw_utility_grapher = deque(maxlen = settings["visible data points"])
-raw_utility_grapher_x = deque(maxlen = settings["visible data points"])
+utility_tracker = deque(maxlen = settings["visible data points"])
+time_step_num_tracker = deque(maxlen = settings["visible data points"])
 
 
 
 #devides a pygame.Rect into multiple smaller Rects
-def divide_rect(rectangle,rows,columns,space):
+def divide_rect(rectangle, rows, columns, space):
     height = int(rectangle.height/rows)
     width = int(rectangle.width/columns)
     r_y = rectangle.y
@@ -113,7 +117,7 @@ def divide_rect(rectangle,rows,columns,space):
 
     for row in range(rows):
         for c in range(columns):
-            r_list[row][c] = pygame.Rect(r_x+(width*c),r_y+(height*row),width-space,height-space)
+            r_list[row][c] = pygame.Rect(r_x+(width*c), r_y+(height*row), width-space, height-space)
     return r_list
 
 
@@ -122,7 +126,7 @@ def divide_rect(rectangle,rows,columns,space):
 BIN_NUM_ROWS = 45
 BIN_NUM_COLUMNS = 45
 
-BOX_MAP = divide_rect(pygame.Rect(LEFT_BORDER,TOP_BORDER,RIGTH_BORDER-LEFT_BORDER,BOTTOM_BORDER-TOP_BORDER),BIN_NUM_ROWS,BIN_NUM_COLUMNS,0)
+BOX_MAP = divide_rect(pygame.Rect(LEFT_BORDER, TOP_BORDER, RIGTH_BORDER-LEFT_BORDER, BOTTOM_BORDER-TOP_BORDER), BIN_NUM_ROWS,BIN_NUM_COLUMNS, 0)
 
 #each row+colum represents a box and contains a list of agents in that box
 box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
@@ -131,7 +135,7 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
-#give graph as varaible!
+#give graph as varaible?
 def graph_type_function(button):
     if button.text == "scatter":
         button.text = "line"
@@ -142,15 +146,20 @@ def graph_type_function(button):
         button.text = "scatter"
 
 
-
-#add ability to load other data too, like settings
 def load_function(button):
     global market_list
-    global wait
-    wait = True
+    global settings
+    global time_step_num_tracker
+    global utility_tracker
+
+    settings["wait"] = True
     button.display.fill(WHITE)
     try:
-        market_list = pickle.load(open("save.p","rb"))
+        load_list = pickle.load(open("save.p","rb"))
+        market_list = load_list[0]
+        settings = load_list[1]
+        time_step_num_tracker = load_list[2]
+        utility_tracker = load_list[3]
     except FileNotFoundError:
         print("saved file not fond")
 
@@ -158,8 +167,12 @@ def load_function(button):
 
 def save_function(button):
     global market_list
-    pickle.dump(market_list, open("save.p","wb"))
+    global settings
+    global time_step_num_tracker
+    global utility_tracker
 
+    dump_list = [market_list, settings, time_step_num_tracker, utility_tracker]
+    pickle.dump(dump_list, open("save.p", "wb"))
 
 
 def market_settings_function(button):
@@ -171,11 +184,11 @@ def market_settings_function(button):
     change_market_settings = not change_market_settings
     button.display.fill(WHITE)
 
-    button_list=[]
+    button_list = []
     if change_market_settings:
         button.text = "Apply"
-        button.x = BUTTON_X+5*(BUTTON_WIDTH+BUTTON_SPACE)
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function,  BUTTON_WIDTH, BUTTON_HEIGHT)
+        button.x = BUTTON_X + 5*(BUTTON_WIDTH+BUTTON_SPACE)
+        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE), BUTTON_Y, GREEN, "Return", button.font, button.display, return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
         button_list.append(return_button)
 
@@ -223,12 +236,12 @@ def settings_function(button):
     global button_list
     global market_list
     global setting_box_list
-    global wait
+    global settings
 
     change_simulation_settings = not change_simulation_settings
     button.display.fill(WHITE)
 
-    button_list=[]
+    button_list = []
     if change_simulation_settings:
         button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -246,9 +259,11 @@ def settings_function(button):
             initialize_market()
         draw_agents(button.display)
         initalize_button_list(button.display)
-        wait = True
+        settings["wait"] = True
 
 def reset_function(button):
+    global settings
+    settings["wait"] = True
     clear()
     button.display.fill(WHITE)
     initialize_market()
@@ -261,7 +276,7 @@ def return_function(button):
 
     change_simulation_settings = False
     change_market_settings = False
-    button_list=[]
+    button_list = []
     initalize_button_list(button.display)
     button.display.fill(WHITE)
     draw_agents(button.display)
@@ -277,13 +292,13 @@ def return_function(button):
 
 
 def pause_function(button):
-    global wait
-    wait = not wait
+    global settings
+    settings["wait"] = not settings["wait"]
 
 
 def step_function(button):
-    global wait
-    wait = True
+    global settings
+    settings["wait"] = True
     button.color = LIME_GREEN
     button.display.fill(WHITE)
     move_agents()
@@ -292,13 +307,12 @@ def step_function(button):
     #TODO
 
 def region_function(button):
-    global region_mode
     global market_list
     global SINGLE_MARKET_BORDER
     global settings
-    region_mode = not region_mode
+    settings["region_mode"] = not settings["region_mode"]
 
-    if region_mode:
+    if settings["region_mode"]:
         button.text = "Borders on"
         button.color = GREEN
 
@@ -309,7 +323,7 @@ def region_function(button):
     else:
         button.text = "Borders off"
         button.color = RED
-        new_region = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),1,1,settings["space"])[0][0]
+        new_region = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER), 1, 1, settings["space"])[0][0]
 
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
@@ -330,14 +344,14 @@ def clear():
     global market_list
     global initial_utility
     global num_agents
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global utility_tracker
+    global time_step_num_tracker
 
     initial_utility = 1
     num_agents = 0
     market_list = [[]]
-    raw_utility_grapher.clear()
-    raw_utility_grapher_x.clear()
+    utility_tracker.clear()
+    time_step_num_tracker.clear()
 
 
 #If the current box is unknown, finds the correct box
@@ -352,9 +366,9 @@ def set_box(agent):
     for row in range(len(BOX_MAP)):
         for col in range(len(BOX_MAP[row])):
             print(BOX_MAP[row][col])
-    print(x)
-    print(y)
+    agent.print_info()
     print("box not found")
+    return (0,0)
 
 #the ask for forgivness approach tested to be faster than ask for permission
 def get_nearby_agents(current_r, current_c):
@@ -373,7 +387,7 @@ def get_nearby_boxes(current_r,current_c):
     global BIN_NUM_ROWS
     nearby_boxes = []
     for row in range(-1,2):
-        if 0<= current_r-row <BIN_NUM_ROWS:
+        if 0 <= current_r-row <BIN_NUM_ROWS:
             for col in range(-1,2):
                 if 0<=current_c-col <BIN_NUM_COLUMNS and not row==col==0:
                     nearby_boxes.append((current_r-row,current_c-col))
@@ -385,8 +399,8 @@ def get_nearby_boxes(current_r,current_c):
 def find_new_box(agent):
     global box_tracker
 
-    r,c=agent.box
-    x,y=agent.get_location()
+    r,c = agent.box
+    x,y = agent.get_location()
 
     #Check the old box first, since the agent is most likely there
     if BOX_MAP[r][c].collidepoint(x,y):
@@ -398,11 +412,13 @@ def find_new_box(agent):
     for row,col in get_nearby_boxes(r,c):
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
-            agent.box=(row,col)
+            agent.box = (row,col)
             #print("new box is ",row,col)
             return
-    #This should never happen
+    #This should never happen, but if it does try to set_box again
     print("could not find new box")
+    agent.box = set_box(agent)
+
 # In[5]:
 
 
@@ -410,8 +426,8 @@ def move_agents():
     global box_tracker
     global market_list
     global num_time_steps
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global utility_tracker
+    global time_step_num_tracker
     global setting_box_list
 
     box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
@@ -419,8 +435,8 @@ def move_agents():
     update = num_time_steps % settings["update interval"] == 0
 
     if update:
-        raw_utility_grapher.append(get_total_utility(market_list))
-        raw_utility_grapher_x.append(num_time_steps)
+        utility_tracker.append(get_total_utility(market_list))
+        time_step_num_tracker.append(num_time_steps)
 
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
@@ -449,9 +465,8 @@ def move_agents():
                 market_list[row][column].price = 0
                 market_list[row][column].num_trades = 1
 
-#market_list does not need to be global for this function!!
 def get_total_utility(market_list):
-    utility=0
+    utility = 0
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             utility += market_list[row][column].get_utility()
@@ -476,52 +491,66 @@ def text_objects(text, font):
 
 def on_top_of_other_agent(agent):
     r,c = agent.box
-    for other_agent in get_nearby_agents(r,c):
+    for other_agent in get_nearby_agents(r, c):
         if agent.collision(other_agent):
             #print("agent on top of other agent at spawn")
             return True
     return False
 
 
-def new_agent_in_region(display,region,radius,preference):
+def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o):
     global initial_utility
     global num_agents
 
     for i in range(20):
-        agent=Agent.Agent(region,num_agents+1,radius,preference)
+        agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges)
         agent.box = set_box(agent)
 
-        if not on_top_of_other_agent(agent):
+        if not overlapp or not on_top_of_other_agent(agent):
             find_new_box(agent)
             agent.draw(display)
             initial_utility += agent.get_utility()
             num_agents += 1
 
-            return agent
+            if pref_a > 0 and pref_o > 0:
+                agent.pref_apples = pref_a
+                agent.pref_oranges = pref_o
 
+            return agent
     return None
 
 
-def create_many_agents(display, num, graph):
+def create_many_agents(display, num):
     global num_agents
     global market_list
     global initial_utility
+    global settings
 
+    overlapp = settings["avoid overlapping agents"]
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             region = market_list[row][column].region
             radius = market_list[row][column].settings["radius"]
             preference = market_list[row][column].settings["preference"]
+
+            pref_a = market_list[row][column].settings["apple preference"]
+            pref_o = market_list[row][column].settings["orange preference"]
+
             for i in range(num):
-                agent = new_agent_in_region(display,region,radius,preference)
+                apples = market_list[row][column].settings["apples"]
+                oranges = market_list[row][column].settings["oranges"]
+                if apples < 1:
+                    apples = random.randint(10,100)
+                if oranges < 1:
+                    oranges = random.randint(10,100)
+
+                agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
                     if not radius == agent.radius:
                         print("radius should be:",radius)
                         print("radius is ",agent.radius)
                         print("market",row,column)
-
-    graph.ylim_min = initial_utility
     print(num_agents," number agents")
 
 def initalize_button_list(display):
@@ -533,7 +562,7 @@ def initalize_button_list(display):
     functions = [pause_function, reset_function, step_function, region_function,
      settings_function, screenshot_function, save_function, market_settings_function, load_function, graph_type_function]
 
-    #The input box is at the BUTTON_X spot, so that is skipped by adding x
+    #The input box is at the BUTTON_X spot, so that is skipped (by adding x)
     x = BUTTON_WIDTH + BUTTON_SPACE
     for i in range(len(names)):
         button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -547,20 +576,19 @@ def create_input_box(name, rect, default_setting):
     except KeyError:
         print("no default for setting:", name)
         pass
-
     return box
 
 def initialize_defaults_box_list():
     global default_box_list
-    global defaults
+    global market_settings
 
     y_space = 5
-    names = ["radius", "show trade", "preference"]
+    names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
     x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
     for i in range(len(names)):
-        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), defaults)
+        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
         default_box_list.append(box)
-    default_box_list[-1].ACCEPTED = string.ascii_lowercase
+    default_box_list[0].ACCEPTED = string.ascii_lowercase
 
 def initialize_setting_box_list():
     global setting_box_list
@@ -577,9 +605,9 @@ def initialize_setting_box_list():
 def initialize_market():
     global market_list
     global settings
-    global defaults
-    global raw_utility_grapher
-    global raw_utility_grapher_x
+    global market_settings
+    global utility_tracker
+    global time_step_num_tracker
 
     r = settings["rows"]
     c = settings["columns"]
@@ -587,13 +615,12 @@ def initialize_market():
     num_data_points = settings["visible data points"]
 
     agent_regions = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER),r,c,s)
-    market_list = [[Market.Market(agent_regions[row][column],BLACK,defaults, num_data_points) for row in range(r)] for column in range(c)]
+    market_list = [[Market.Market(agent_regions[row][column],BLACK,market_settings, num_data_points) for row in range(r)] for column in range(c)]
 
-    raw_utility_grapher = deque(maxlen = num_data_points)
-    raw_utility_grapher_x = deque(maxlen = num_data_points)
+    utility_tracker = deque(maxlen = num_data_points)
+    time_step_num_tracker = deque(maxlen = num_data_points)
 
-def market_clicked(market, mouse, display):
-    global wait
+def market_clicked(market, mouse, display, wait):
 
     for agent in market.agents:
         if agent.is_point_over_agent(mouse):
@@ -635,12 +662,13 @@ def update_graph(key, market_list, graph):
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
-                graph.plot(raw_utility_grapher_x, list(market_list[row][column].utility_tracker))
+                graph.plot(time_step_num_tracker, list(market_list[row][column].utility_tracker))
 
     elif key == "scatter":
             graph.title = "Allocation of goods for each agent"
             graph.x_label = "Number of Apples"
             graph.y_label = "Number of Oranges"
+            """
             #plot budget line
             a_list = []
             b_list = []
@@ -650,6 +678,7 @@ def update_graph(key, market_list, graph):
             graph.plot_type = "line"
             graph.plot(a_list,b_list)
             label.append("initial budget line")
+            """
             graph.plot_type = "scatter"
 
             for row in range(len(market_list)):
@@ -666,24 +695,23 @@ def update_graph(key, market_list, graph):
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
-                graph.plot(raw_utility_grapher_x, list(market_list[row][column].price_tracker))
+                graph.plot(time_step_num_tracker, list(market_list[row][column].price_tracker))
 
     graph.set_legend(label)
     graph.update_graph()
 
 
 def main():
-    global wait
     global change_simulation_settings
     global change_market_settings
     global setting_box_list
-    global region_mode #Don't need this to be a global variable
+    global settings
     global market_list
     global initial_utility
     global button_font
 
     pygame.init()
-    display = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
+    display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
     display.fill(WHITE)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
@@ -691,7 +719,7 @@ def main():
     button_font = pygame.font.Font("freesansbold.ttf",20)
 
     #rename?
-    text = TextBox.TextBox((BUTTON_X,BUTTON_Y,BUTTON_WIDTH,BUTTON_HEIGHT))
+    text = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
 
     initialize_market()
     initialize_setting_box_list()
@@ -699,7 +727,7 @@ def main():
     initalize_button_list(display)
 
     graph = Graph.Graph("scatter")
-
+    graph.ylim_min = initial_utility
 
     run = True
     while run:
@@ -713,16 +741,16 @@ def main():
 
                 #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
-                    create_many_agents(display,1,graph)
+                    create_many_agents(display, 1)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
-                    wait = not wait
+                    settings["wait"] = not settings["wait"]
 
                 #check if input box (text) is active
                 elif text.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(display,text.execute(),graph)
+                        create_many_agents(display, text.execute())
 
                     #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
@@ -792,7 +820,7 @@ def main():
                             for column in range(len(market_list[row])):
                                 #check if market is clicked before looping over agents
                                 if market_list[row][column].region.collidepoint(mouse):
-                                    market_clicked(market_list[row][column], mouse, display)
+                                    market_clicked(market_list[row][column], mouse, display, settings["wait"])
                                     break
         #end of event loop
 
@@ -816,8 +844,8 @@ def main():
                 textRect.x -= 5
                 display.blit(textSurf, textRect)
         else:
-            if wait:
-                #TODO move this to the wait button
+            if settings["wait"]:
+                #TODO move this
                 button_list[0].color = GREEN
                 button_list[0].text = "Start"
 
