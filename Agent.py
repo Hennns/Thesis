@@ -1,3 +1,4 @@
+#the below link used in creating this file
 #http://programarcadegames.com/python_examples/f.php?file = bouncing_balls.py
 
 import random
@@ -9,6 +10,7 @@ from ColorDefinitions import *
 
 SPEED = 3
 
+#These can also be settings
 INITIAL_MAX_NUM_GOODS = 256
 INITIAL_MAX_PREFERENCE = 16
 INITIAL_MIN_NUM_GOODS = 128
@@ -22,11 +24,11 @@ SELECTED_COLOR = YELLOW
 class Agent:
 
     def update_color(self):
-        scaler = self.apples/(self.apples+self.oranges)
+        scaler = self.apples / (self.apples + self.oranges)
         r = 0
-        g = int(255*(1-scaler))
+        g = int(255 * (1 - scaler))
         b = 255
-        self.color = (r,g,b)
+        self.color = (r, g, b)
 
     def create_preferences(self):
         if self.preference == "normal":
@@ -63,7 +65,7 @@ class Agent:
         self.x = random.randrange(self.radius + self.region.left, self.region.right - self.radius)
         self.y = random.randrange(self.radius + self.region.top, self.region.bottom - self.radius)
 
-        angle = random.uniform(0,2*math.pi)
+        angle = random.uniform(0, 2 * math.pi)
         self.change_x = math.cos(angle) * SPEED
         self.change_y = math.sin(angle) * SPEED
 
@@ -80,7 +82,7 @@ class Agent:
         self.change_x = direction[0] * SPEED
         self.change_y = direction[1] * SPEED
 
-        #to other_agent new direction is the opposite of agent
+        #to the other_agent new direction is the opposite of agent
         other_agent.change_x =- self.change_x
         other_agent.change_y =- self.change_y
 
@@ -161,7 +163,7 @@ class Agent:
         dy = self.y - other_agent.y
         r = self.radius + other_agent.radius
         if(dx*dx) + (dy*dy) < r*r:
-                #Dont collide when on way back to its market
+            #Dont collide when on way back to its market
             if self.returning_to_market():
                 return False
             return True
@@ -169,7 +171,7 @@ class Agent:
 
 
     def returning_to_market(self):
-        return not self.region.collidepoint((self.x,self.y))
+        return not self.region.collidepoint((self.x, self.y))
 
     def is_point_over_agent(self, point):
         x,y = point
@@ -192,7 +194,7 @@ class Agent:
         pygame.draw.circle(display, self.color, (x,y), self.radius)
 
 
-    def remove_selected_circle(self,display):
+    def remove_selected_circle(self, display):
         x,y = self.get_location()
         pygame.draw.circle(display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
         self.draw(display)

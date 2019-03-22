@@ -3,7 +3,6 @@
 
 import pygame
 import string
-import pickle
 from collections import deque
 import datetime
 import random
@@ -446,7 +445,6 @@ def move_agents():
                 for other_agent in get_nearby_agents(r,c):
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
-
                         market_list[row][column].trade(agent, other_agent)
                         """
                         Seems like this is unneccesarily due to code in market.py
