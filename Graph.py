@@ -22,7 +22,6 @@ class Graph():
         self.last_update_time = 0
         self.plot_type = plot_type
         self.title = "title"
-        self.ylim_min = None
         self.x_label = "x_label"
         self.y_label = "y_label"
 
@@ -41,11 +40,11 @@ class Graph():
 
         if self.plot_type == "line":
             ax.plot(x_list, y_list)
-            #ax.set_ylim(ymin = self.ylim_min)
+
         elif self.plot_type == "scatter":
             ax.scatter(x_list, y_list) #add label
 
-
+        ax.set_ylim(ymin = 0)
         ax.set_title(self.title)
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.y_label)
