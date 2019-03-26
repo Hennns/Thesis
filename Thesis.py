@@ -37,8 +37,7 @@ market_list = [[]]
 button_list = []
 setting_box_list = []
 default_box_list = []
-change_simulation_settings = False
-change_market_settings = False
+
 button_font = None
 
 settings = {
@@ -49,8 +48,10 @@ settings = {
             "visible data points": 2000,
             "speed multiplier": 1,
             "region_mode": True,
+            "avoid overlapping agents": True,
+            "graph": "line",
             "wait": True,
-            "avoid overlapping agents": True
+            "change settings": False
             }
 
 market_settings = {
@@ -136,13 +137,13 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 # In[3]:
 #give graph as varaible?
 def graph_type_function(button):
-    if button.text == "scatter":
-        button.text = "line"
-    elif button.text == "line":
-        button.text = "price"
-
+    global settings
+    if settings["graph"] == "scatter":
+        settings["graph"] = "line"
+    elif settings["graph"] == "line":
+        settings["graph"] = "price"
     else:
-        button.text = "scatter"
+        settings["graph"] = "scatter"
 
 
 def load_function(button):
@@ -174,74 +175,26 @@ def save_function(button):
     pickle.dump(dump_list, open("save.p", "wb"))
 
 
-def market_settings_function(button):
-    global change_market_settings
-    global button_list
-    global market_list
-    global default_box_list
 
-    change_market_settings = not change_market_settings
-    button.display.fill(WHITE)
-
-    button_list = []
-    if change_market_settings:
-        button.text = "Apply"
-        button.x = BUTTON_X + 5*(BUTTON_WIDTH+BUTTON_SPACE)
-        return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE), BUTTON_Y, GREEN, "Return", button.font, button.display, return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
-        button_list.append(button)
-        button_list.append(return_button)
-
-    else:
-        num_markets_selected = 0
-        draw_agents(button.display)
-        initalize_button_list(button.display)
-
-        for row in range(len(market_list)):
-            for column in range(len(market_list[row])):
-                if market_list[row][column].is_selected:
-                    num_markets_selected += 1
-        #If no market is selected then we update the settings of every market
-        #Can this be a true/false value? should it be? TODO
-        if num_markets_selected == 0:
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    for input_box in default_box_list:
-                        #print("updating settings in market",row,column)
-                        market_list[row][column].settings[input_box.name] = input_box.get_input()
-                        #same as below
-                        #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
-                        #    for agent in market_list[row][column].agents:
-                        #        agent.preference = market_list[row][column].settings["preference"]
-
-        #else update only the settings of the selected markets
-        else:
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    if market_list[row][column].is_selected:
-                        for input_box in default_box_list:
-                            #print("updating settings in market",row,column)
-                            market_list[row][column].settings[input_box.name] = input_box.get_input()
-                            #It's possible to update settings for agents this way
-                            #but preference cannot be changed on the fly (unless utility is reset)
-                            #if market_list[row][column].settings[input_box.name] == market_list[row][column].settings["preference"]:
-                            #    for agent in market_list[row][column].agents:
-                            #        agent.preference = market_list[row][column].settings["preference"]
-                            #    print("updated market",row,column)
-
-
+def get_num_markets_selected(market_list):
+    num_markets_selected = 0
+    for row in range(len(market_list)):
+        for column in range(len(market_list[row])):
+            if market_list[row][column].is_selected:
+                num_markets_selected += 1
+    return num_markets_selected
 
 def settings_function(button):
-    global change_simulation_settings
     global button_list
     global market_list
     global setting_box_list
     global settings
 
-    change_simulation_settings = not change_simulation_settings
+    settings["change settings"] = not settings["change settings"]
     button.display.fill(WHITE)
 
     button_list = []
-    if change_simulation_settings:
+    if settings["change settings"]:
         button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
@@ -256,9 +209,32 @@ def settings_function(button):
             settings[input_box.name] = input_box.get_input()
         if update_markets:
             initialize_market()
+
+        #MARKET PART
+        if get_num_markets_selected() == 0:
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    for input_box in default_box_list:
+                        market_list[row][column].settings[input_box.name] = input_box.get_input()
+        #else update only the settings of the selected markets
+        else:
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    if market_list[row][column].is_selected:
+                        for input_box in default_box_list:
+                            market_list[row][column].settings[input_box.name] = input_box.get_input()
+                            #It's possible to update settings for agents this way
+                            #possible future work
+
+        #end market PART
         draw_agents(button.display)
         initalize_button_list(button.display)
         settings["wait"] = True
+
+
+
+
+
 
 def reset_function(button):
     global settings
@@ -268,13 +244,11 @@ def reset_function(button):
     initialize_market()
 
 def return_function(button):
-    global change_simulation_settings
-    global change_market_settings
+    global settings
     global button_list
     global setting_box_list
 
-    change_simulation_settings = False
-    change_market_settings = False
+    settings["change settings"] = False
     button_list = []
     initalize_button_list(button.display)
     button.display.fill(WHITE)
@@ -556,9 +530,9 @@ def initalize_button_list(display):
     global button_font
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
-     "Save", "M Settings", "Load", "scatter"]
+     "Save", "Load", "Next Graph"]
     functions = [pause_function, reset_function, step_function, region_function,
-     settings_function, screenshot_function, save_function, market_settings_function, load_function, graph_type_function]
+     settings_function, screenshot_function, save_function, load_function, graph_type_function]
 
     #The input box is at the BUTTON_X spot, so that is skipped (by adding x)
     x = BUTTON_WIDTH + BUTTON_SPACE
@@ -581,10 +555,13 @@ def initialize_defaults_box_list():
     global market_settings
 
     y_space = 5
+    distance_from_simulation_settings = 400
+    distance_from_text = 100
+
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
-    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
+    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE) + distance_from_simulation_settings
     for i in range(len(names)):
-        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
+        box = create_input_box(names[i], (x, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
         default_box_list.append(box)
     default_box_list[0].ACCEPTED = string.ascii_lowercase
 
@@ -593,10 +570,12 @@ def initialize_setting_box_list():
     global settings
 
     y_space = 5
+    distance_from_text = 100
+
     names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier"]
     x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
     for i in range(len(names)):
-        box = create_input_box(names[i], (x, BUTTON_Y + (1+i)*(BUTTON_HEIGHT+y_space), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
+        box = create_input_box(names[i], (x, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
         setting_box_list.append(box)
 
 
@@ -699,9 +678,17 @@ def update_graph(key, market_list, graph):
     graph.update_graph()
 
 
+def draw_input_box(box, display):
+    box.update()
+    box.draw(display)
+
+    textSurf, textRect = text_objects(box.name, button_font)
+    textRect.midright = box.rect.midleft
+    textRect.x -= 5
+    display.blit(textSurf, textRect)
+
+
 def main():
-    global change_simulation_settings
-    global change_market_settings
     global setting_box_list
     global settings
     global market_list
@@ -758,7 +745,8 @@ def main():
                     elif event.unicode in text.ACCEPTED:
                         text.buffer.append(event.unicode)
 
-                elif change_simulation_settings:
+                elif settings["change settings"]:
+                    #simulation settings
                     for input_box in setting_box_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
@@ -773,7 +761,7 @@ def main():
                             elif event.unicode in input_box.ACCEPTED:
                                 input_box.buffer.append(event.unicode)
                             break
-                elif change_market_settings:
+                    #market settings
                     for input_box in default_box_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
@@ -804,12 +792,11 @@ def main():
                             b.execute()
                             break
 
-                    #if chaninging simulation settings, update if a input box is active
-                    if change_market_settings:
+                    #update which box is active when changing settings
+                    if settings["change settings"]:
                         for input_box in default_box_list:
                             input_box.active = input_box.rect.collidepoint(mouse)
-                    #if chaninging market settings, update if a input box is active
-                    elif change_simulation_settings:
+
                         for input_box in setting_box_list:
                             input_box.active = input_box.rect.collidepoint(mouse)
                     else:
@@ -822,25 +809,13 @@ def main():
                                     break
         #end of event loop
 
-        if change_simulation_settings:
+        if settings["change settings"]:
             for input_box in setting_box_list:
-                input_box.update()
-                input_box.draw(display)
+                draw_input_box(input_box, display)
 
-                textSurf, textRect = text_objects(input_box.name, button_font)
-                textRect.midright = input_box.rect.midleft
-                textRect.x -= 5
-                display.blit(textSurf, textRect)
-
-        elif change_market_settings:
             for input_box in default_box_list:
-                input_box.update()
-                input_box.draw(display)
+                draw_input_box(input_box, display)
 
-                textSurf, textRect = text_objects(input_box.name, button_font)
-                textRect.midright = input_box.rect.midleft
-                textRect.x -= 5
-                display.blit(textSurf, textRect)
         else:
             if settings["wait"]:
                 #TODO move this
@@ -873,7 +848,7 @@ def main():
             time = pygame.time.get_ticks()
             if time >= graph.last_update_time + graph.update_delta:
                 graph.last_update_time = time
-                update_graph(button_list[-1].text, market_list, graph)
+                update_graph(settings["graph"], market_list, graph)
             #draw the graph
             display.blit(graph.get_graph_as_image(), (RIGTH_BORDER,150))
 
