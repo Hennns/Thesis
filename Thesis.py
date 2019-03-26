@@ -38,7 +38,6 @@ button_list = []
 setting_box_list = []
 default_box_list = []
 
-button_font = None
 
 settings = {
             "rows": 1,
@@ -211,7 +210,7 @@ def settings_function(button):
             initialize_market()
 
         #MARKET PART
-        if get_num_markets_selected() == 0:
+        if get_num_markets_selected(market_list) == 0:
             for row in range(len(market_list)):
                 for column in range(len(market_list[row])):
                     for input_box in default_box_list:
@@ -226,12 +225,10 @@ def settings_function(button):
                             #It's possible to update settings for agents this way
                             #possible future work
 
-        #end market PART
+
         draw_agents(button.display)
-        initalize_button_list(button.display)
+        initalize_button_list(button.display, button.font)
         settings["wait"] = True
-
-
 
 
 
@@ -525,9 +522,8 @@ def create_many_agents(display, num):
                         print("market",row,column)
     print(num_agents," number agents")
 
-def initalize_button_list(display):
+def initalize_button_list(display, font):
     global button_list
-    global button_font
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
      "Save", "Load", "Next Graph"]
@@ -537,7 +533,7 @@ def initalize_button_list(display):
     #The input box is at the BUTTON_X spot, so that is skipped (by adding x)
     x = BUTTON_WIDTH + BUTTON_SPACE
     for i in range(len(names)):
-        button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], button_font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
+        button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
 
 def create_input_box(name, rect, default_setting):
@@ -678,11 +674,11 @@ def update_graph(key, market_list, graph):
     graph.update_graph()
 
 
-def draw_input_box(box, display):
+def draw_input_box(box, display, font):
     box.update()
     box.draw(display)
 
-    textSurf, textRect = text_objects(box.name, button_font)
+    textSurf, textRect = text_objects(box.name, font)
     textRect.midright = box.rect.midleft
     textRect.x -= 5
     display.blit(textSurf, textRect)
@@ -693,23 +689,27 @@ def main():
     global settings
     global market_list
     global initial_utility
-    global button_font
+
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
     display.fill(WHITE)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 30)
-    button_font = pygame.font.Font("freesansbold.ttf",20)
+
+    button_font = pygame.font.SysFont("arial", 20)
+    text_font = pygame.font.SysFont("arial", 30)
+
+    simulation_settings_text = text_font.render("Change Simulation Settings", True, BLACK)
+    market_settings_text = text_font.render("Change Market Settings (affects all markets if none are selected)", True, BLACK)
 
     #rename?
-    text = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+    num_agent_input_box = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
 
     initialize_market()
     initialize_setting_box_list()
     initialize_defaults_box_list()
-    initalize_button_list(display)
+    initalize_button_list(display, button_font)
 
     graph = Graph.Graph("scatter")
     graph.ylim_min = initial_utility
@@ -732,18 +732,17 @@ def main():
                 elif event.key == pygame.K_p:
                     settings["wait"] = not settings["wait"]
 
-                #check if input box (text) is active
-                elif text.active:
+                elif num_agent_input_box.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(display, text.execute())
+                        create_many_agents(display, num_agent_input_box.execute())
 
                     #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
-                        if text.buffer:
-                            text.buffer.pop()
+                        if num_agent_input_box.buffer:
+                            num_agent_input_box.buffer.pop()
                     #if input is valid (only int are) then add it to the end
-                    elif event.unicode in text.ACCEPTED:
-                        text.buffer.append(event.unicode)
+                    elif event.unicode in num_agent_input_box.ACCEPTED:
+                        num_agent_input_box.buffer.append(event.unicode)
 
                 elif settings["change settings"]:
                     #simulation settings
@@ -778,13 +777,13 @@ def main():
 
 
             #left mouse click
-            elif event.type == pygame.MOUSEBUTTONUP and event.button==1:
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 #get mouse position
                 mouse = pygame.mouse.get_pos()
-                text.active = text.rect.collidepoint(mouse)
+                num_agent_input_box.active = num_agent_input_box.rect.collidepoint(mouse)
 
                #if the mouse is above the input box it is not above anything else
-                if not text.active:
+                if not num_agent_input_box.active:
                     #check if the mouse is above a button, if it is execute that button
                     for b in button_list:
                         r = pygame.Rect(b.getRect())
@@ -810,11 +809,13 @@ def main():
         #end of event loop
 
         if settings["change settings"]:
+            display.blit(simulation_settings_text, (100, 100))
+            display.blit(market_settings_text, (500, 100))
             for input_box in setting_box_list:
-                draw_input_box(input_box, display)
+                draw_input_box(input_box, display, button_font)
 
             for input_box in default_box_list:
-                draw_input_box(input_box, display)
+                draw_input_box(input_box, display, button_font)
 
         else:
             if settings["wait"]:
@@ -837,12 +838,12 @@ def main():
             draw_markets(display)
 
             #draw the input box
-            text.update()
-            text.draw(display)
+            num_agent_input_box.update()
+            num_agent_input_box.draw(display)
 
             #draw current utility
-            u = font.render("Current Utility: {:0.2f}".format(get_total_utility(market_list)), True, BLACK)
-            display.blit(u,(RIGTH_BORDER, 750))
+            u = text_font.render("Current Utility: {:0.2f}".format(get_total_utility(market_list)), True, BLACK)
+            display.blit(u, (RIGTH_BORDER, 750))
 
             #update graph
             time = pygame.time.get_ticks()
@@ -856,7 +857,7 @@ def main():
         for b in button_list:
             b.draw_button()
 
-        fps = font.render(str(int(clock.get_fps())), True, BLACK)
+        fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
 
