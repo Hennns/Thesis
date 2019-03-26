@@ -594,11 +594,10 @@ def initialize_market():
     time_step_num_tracker = deque(maxlen = num_data_points)
 
 def market_clicked(market, mouse, display, wait):
-
     for agent in market.agents:
         if agent.is_point_over_agent(mouse):
             agent.is_selected = not agent.is_selected
-            #If the simulation is paused the agents need to be re_drawn
+            #If the simulation is paused the agent need to be re_drawn
             if wait:
                 if agent.is_selected:
                     agent.draw(display)
@@ -748,8 +747,8 @@ def main():
                     #simulation settings
                     for input_box in setting_box_list:
                         if input_box.active:
-                            if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                                input_box.active= False
+                            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                                input_box.active = False
                                 #Setting radius too large makes collision detection fail
                                 #Probably bc the agents get's bigger than the bins they fall into
                             #Delete last input
@@ -763,7 +762,7 @@ def main():
                     #market settings
                     for input_box in default_box_list:
                         if input_box.active:
-                            if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
+                            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                                 input_box.active= False
 
                             #Delete last input
@@ -868,8 +867,7 @@ def main():
         pygame.display.flip()
 
 
-
-    #end of loop we exit
+    #end of loop exit pygame
     pygame.quit()
 
 

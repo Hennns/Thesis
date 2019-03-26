@@ -4,7 +4,6 @@ import pygame
 from ColorDefinitions import *
 #from Thesis.ColorDefinitions import *
 
-#Make this into pygame rect?
 class button:
 
     def __init__(self, x, y, color, text, font, display, function, width, heigth):
