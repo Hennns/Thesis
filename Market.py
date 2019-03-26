@@ -35,7 +35,7 @@ class Market:
         before_trade_utility_other_agent = other_agent.get_utility()
 
         traded = self.attempt_trade(agent, other_agent)
-
+        """
         #This can be removed! TODO
         if agent.get_utility() <before_trade_utility_agent:
             print("MATH ERROR, agent")
@@ -45,7 +45,7 @@ class Market:
         if other_agent.get_utility() <before_trade_utility_other_agent:
             print("MATH ERROR, other agent")
             print("after", other_agent.get_utility())
-        #remove for speed up!! TODO
+        """
 
         if show_trade:
             if traded:
