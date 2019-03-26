@@ -227,7 +227,7 @@ def settings_function(button):
 
 
         draw_agents(button.display)
-        initalize_button_list(button.display, button.font)
+        initialize_button_list(button.display, button.font)
         settings["wait"] = True
 
 
@@ -247,7 +247,7 @@ def return_function(button):
 
     settings["change settings"] = False
     button_list = []
-    initalize_button_list(button.display)
+    initialize_button_list(button.display, button.font)
     button.display.fill(WHITE)
     draw_agents(button.display)
 
@@ -522,7 +522,7 @@ def create_many_agents(display, num):
                         print("market",row,column)
     print(num_agents," number agents")
 
-def initalize_button_list(display, font):
+def initialize_button_list(display, font):
     global button_list
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
@@ -709,7 +709,7 @@ def main():
     initialize_market()
     initialize_setting_box_list()
     initialize_defaults_box_list()
-    initalize_button_list(display, button_font)
+    initialize_button_list(display, button_font)
 
     graph = Graph.Graph("scatter")
     graph.ylim_min = initial_utility
