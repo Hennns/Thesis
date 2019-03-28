@@ -25,6 +25,8 @@ class Market:
     def get_price(self):
         if self.num_trades > 1:
             self.num_trades - 1
+        if self.price == 0:
+            return None
         return self.price / self.num_trades
 
 
@@ -92,7 +94,7 @@ class Market:
         while other_agent.get_utility() < other_agent_old_utillity:
             price += 1
             other_agent.oranges += 1
-            if agent.oranges -price < 0:
+            if agent.oranges - price < 0:
                 #agent does not have enough oranges to trade
                 reset()
                 return False
@@ -109,7 +111,7 @@ class Market:
 
 
 
-"""
+    """
     #opposite of above function
     #trade 1 orange for the lowest number of apples
     def trade_orange_for_apple(self, agent, other_agent):
@@ -145,7 +147,7 @@ class Market:
         agent.apples += price
         reset()
         return False
-"""
+    """
 
 
 
