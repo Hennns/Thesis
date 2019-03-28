@@ -128,7 +128,7 @@ class Agent:
     def print_info(self):
         print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
         print(" agent",self.id," pref_apples:", self.pref_apples ," pref_oranges:",self.pref_oranges)
-        print(" agent",self.id," utility ", self.get_utility_cobb_douglass())
+        print(" agent",self.id," utility ", self.get_utility())
 
     def move(self):
         self.update_color()
