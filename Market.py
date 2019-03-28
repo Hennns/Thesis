@@ -35,7 +35,7 @@ class Market:
         before_trade_utility_other_agent = other_agent.get_utility()
 
         traded = self.attempt_trade(agent, other_agent)
-        """
+
         #This can be removed! TODO
         if agent.get_utility() <before_trade_utility_agent:
             print("MATH ERROR, agent")
@@ -45,7 +45,7 @@ class Market:
         if other_agent.get_utility() <before_trade_utility_other_agent:
             print("MATH ERROR, other agent")
             print("after", other_agent.get_utility())
-        """
+
 
         if show_trade:
             if traded:
@@ -61,21 +61,15 @@ class Market:
         mrs_agent = agent.get_mrs_apples()
         mrs_other_agent = other_agent.get_mrs_apples()
 
-        #This part makes it hard to track price
-        #track two seperate prices??
-
         #Agent want apples more than other agent
         if mrs_agent > mrs_other_agent:
-            if random() < 0.5:
-                return self.trade_apple_for_oranges(agent, other_agent)
-            return self.trade_orange_for_apple(other_agent, agent)
+            return self.trade_apple_for_oranges(agent, other_agent)
         if mrs_agent == mrs_other_agent:
             return False
 
         #other_agent want apples more than agent
-        if random() < 0.5:
-            return self.trade_apple_for_oranges(other_agent, agent)
-        return self.trade_orange_for_apple(agent, other_agent)
+        return self.trade_apple_for_oranges(other_agent, agent)
+
 
 
     #trade 1 apple for the lowest number of oranges
@@ -115,7 +109,7 @@ class Market:
 
 
 
-
+"""
     #opposite of above function
     #trade 1 orange for the lowest number of apples
     def trade_orange_for_apple(self, agent, other_agent):
@@ -151,7 +145,7 @@ class Market:
         agent.apples += price
         reset()
         return False
-
+"""
 
 
 
