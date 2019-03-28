@@ -8,7 +8,7 @@ import pygame
 from ColorDefinitions import *
 #from Thesis.ColorDefinitions import *
 
-SPEED = 3
+SPEED = 2
 
 #These can also be settings
 INITIAL_MAX_NUM_GOODS = 256
@@ -18,7 +18,7 @@ INITIAL_MIN_PREFERENCE = 2
 
 
 
-SELECTED_WIDTH = 2
+SELECTED_WIDTH = 1
 SELECTED_COLOR = YELLOW
 
 class Agent:
@@ -128,7 +128,10 @@ class Agent:
     def print_info(self):
         print(" agent",self.id," apples:",self.apples ," oranges:",self.oranges)
         print(" agent",self.id," pref_apples:", self.pref_apples ," pref_oranges:",self.pref_oranges)
-        print(" agent",self.id," utility ", self.get_utility_cobb_douglass())
+        print(" agent",self.id," utility ", self.get_utility())
+        print("change_x", self.change_x)
+        print("change_y", self.change_y)
+        print(self.box)
 
     def move(self):
         self.update_color()
@@ -183,18 +186,19 @@ class Agent:
         return False
 
     def get_location(self):
+        return self.x, self.y
+
+    def __get_location_as_int(self):
         return (int(round(self.x)), int(round(self.y)))
 
-
-
     def draw(self,display):
-        x,y = self.get_location()
+        x,y = self.__get_location_as_int()
         if self.is_selected:
             pygame.draw.circle(display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
         pygame.draw.circle(display, self.color, (x,y), self.radius)
 
 
     def remove_selected_circle(self, display):
-        x,y = self.get_location()
+        x,y = self.__get_location_as_int()
         pygame.draw.circle(display,WHITE, (x,y), self.radius+SELECTED_WIDTH)
         self.draw(display)

@@ -12,11 +12,10 @@ import pygame
 
 class Graph():
 
-    def __init__(self,plot_type):
+    def __init__(self, plot_type):
         self.fig = pylab.figure(figsize = [5, 5], # Inches
                            dpi = 100,        # number of dots per inch
                            )
-
 
         self.update_delta = 250
         self.last_update_time = 0
@@ -44,11 +43,16 @@ class Graph():
         elif self.plot_type == "scatter":
             ax.scatter(x_list, y_list) #add label
 
-        ax.set_ylim(ymin = 0)
+
         ax.set_title(self.title)
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.y_label)
 
+    def make_box(self, min, max):
+        ax = self.fig.gca()
+
+        ax.set_ylim(ymin = min, ymax = max)
+        ax.set_xlim(xmin = min, xmax = max)
 
     def set_legend(self, label):
         ax = self.fig.gca()
