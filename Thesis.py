@@ -92,7 +92,6 @@ region_width = RIGTH_BORDER - LEFT_BORDER
 region_height = BOTTOM_BORDER - TOP_BORDER
 SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
-
 num_agents = 0
 num_time_steps = 1
 initial_utility = 1
@@ -547,32 +546,25 @@ def create_input_box(name, rect, default_setting):
         pass
     return box
 
-def initialize_defaults_box_list():
+def initialize_defaults_box_list(y_space, x_start, distance_from_text):
     global default_box_list
     global market_settings
 
-    y_space = 5
-    distance_from_simulation_settings = 400
-    distance_from_text = 100
-
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
-    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE) + distance_from_simulation_settings
+
     for i in range(len(names)):
-        box = create_input_box(names[i], (x, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
+        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
         default_box_list.append(box)
     default_box_list[0].ACCEPTED = string.ascii_lowercase
 
-def initialize_setting_box_list():
+def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global setting_box_list
     global settings
 
-    y_space = 5
-    distance_from_text = 100
-
     names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier"]
-    x = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
+
     for i in range(len(names)):
-        box = create_input_box(names[i], (x, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
+        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
         setting_box_list.append(box)
 
 
@@ -700,19 +692,25 @@ def main():
     button_font = pygame.font.SysFont("arial", 20)
     text_font = pygame.font.SysFont("arial", 30)
 
-    simulation_settings_text = text_font.render("Change Simulation Settings", True, BLACK)
-    market_settings_text = text_font.render("Change Market Settings (affects all markets if none are selected)", True, BLACK)
+    simulation_settings_text = text_font.render("Simulation Settings", True, BLACK)
+    market_settings_text = text_font.render("Market Settings (affects all markets if none are selected)", True, BLACK)
 
-    #rename?
     num_agent_input_box = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
 
-    initialize_market()
-    initialize_setting_box_list()
-    initialize_defaults_box_list()
+    x_start = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
+    setting_box_distance = 400
+    simulation_text_xpos = x_start - simulation_settings_text.get_width() + BUTTON_WIDTH
+    market_text_xpos = x_start + setting_box_distance
+
+    initialize_setting_box_list(5, x_start, 55)
+    initialize_defaults_box_list(5, x_start + setting_box_distance, 55)
     initialize_button_list(display, button_font)
+    initialize_market()
+
+
 
     graph = Graph.Graph("scatter")
-    graph.ylim_min = initial_utility
+    #graph.ylim_min = initial_utility
 
     run = True
     while run:
@@ -809,8 +807,8 @@ def main():
         #end of event loop
 
         if settings["change settings"]:
-            display.blit(simulation_settings_text, (100, 100))
-            display.blit(market_settings_text, (500, 100))
+            display.blit(simulation_settings_text, (simulation_text_xpos , 100))
+            display.blit(market_settings_text, (market_text_xpos, 100))
             for input_box in setting_box_list:
                 draw_input_box(input_box, display, button_font)
 
