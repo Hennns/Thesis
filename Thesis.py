@@ -2,6 +2,7 @@
 # In[1]:
 
 import pygame
+import pickle
 import string
 from collections import deque
 import datetime
