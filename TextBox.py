@@ -33,7 +33,7 @@ class TextBox():
                     "outline_color" : BLACK,
                     "outline_width" : 2,
                     "active_color" : BLUE,
-                    "font" : pygame.font.Font("freesansbold.ttf",self.text_size),
+                    "font" : pygame.font.Font("freesansbold.ttf", self.text_size),
                     }
 
         self.__dict__.update(defaults)
