@@ -37,7 +37,7 @@ from ColorDefinitions import *
 market_list = [[]]
 button_list = []
 setting_box_list = []
-default_box_list = []
+market_setting_list = []
 
 
 settings = {
@@ -51,7 +51,8 @@ settings = {
             "avoid overlapping agents": True,
             "graph": "line",
             "wait": True,
-            "change settings": False
+            "change settings": False,
+            "Allocation Graph Size" : 175
             }
 
 market_settings = {
@@ -137,12 +138,12 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 #give graph as varaible?
 def graph_type_function(button):
     global settings
-    if settings["graph"] == "scatter":
+    if settings["graph"] == "Allocation":
         settings["graph"] = "line"
     elif settings["graph"] == "line":
         settings["graph"] = "price"
     else:
-        settings["graph"] = "scatter"
+        settings["graph"] = "Allocation"
 
 
 def load_function(button):
@@ -174,35 +175,66 @@ def save_function(button):
     pickle.dump(dump_list, open("save.p", "wb"))
 
 
-
-def get_num_markets_selected(market_list):
-    num_markets_selected = 0
+def get_selected_markets(market_list):
+    selected = []
+    all_markets = []
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
+            all_markets.append(market_list[row][column])
             if market_list[row][column].is_selected:
-                num_markets_selected += 1
-    return num_markets_selected
+                selected.append(market_list[row][column])
+    if selected:
+        return selected
+    return all_markets
 
 def settings_function(button):
     global button_list
     global market_list
     global setting_box_list
+
     global settings
 
     settings["change settings"] = not settings["change settings"]
     button.display.fill(WHITE)
-
     button_list = []
+
+
     if settings["change settings"]:
         button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
         button_list.append(return_button)
 
+        #update box Buffers
+        selected_markets = get_selected_markets(market_list)
+
+        if len(selected_markets) == 1:
+            for row in range(len(market_list)):
+                for column in range(len(market_list[row])):
+                    if market_list[row][column].is_selected:
+                        for box in market_setting_list:
+                            box.buffer = [str(i) for i in str(market_list[row][column].settings[box.name])]
+        
+        for box in market_setting_list:
+            new_buffer = ""
+            stop = False
+            for market in selected_markets:
+                print(new_buffer)
+                if stop:
+                    break
+                if new_buffer == "":
+                    new_buffer = market.settings[box.name]
+                else:
+                    if (new_buffer == market.settings[box.name]) is False:
+                        new_buffer = ""
+                        stop = True
+            box.buffer = [str(i) for i in str(new_buffer)]
+
     else:
+        #Only initialize_markets again if needed
         update_markets = False
         for input_box in setting_box_list:
-            if input_box.name == "rows" or input_box.name == "columns":
+            if input_box.name == "rows" or input_box.name == "columns" or input_box.name == "space":
                 if not settings[input_box.name] == input_box.get_input():
                     update_markets = True
             settings[input_box.name] = input_box.get_input()
@@ -210,19 +242,19 @@ def settings_function(button):
             initialize_market()
 
         #MARKET PART
-        if get_num_markets_selected(market_list) == 0:
+        if len(get_selected_markets(market_list)) == 0:
             for row in range(len(market_list)):
                 for column in range(len(market_list[row])):
-                    for input_box in default_box_list:
+                    for input_box in market_setting_list:
                         market_list[row][column].settings[input_box.name] = input_box.get_input()
         #else update only the settings of the selected markets
         else:
             for row in range(len(market_list)):
                 for column in range(len(market_list[row])):
                     if market_list[row][column].is_selected:
-                        for input_box in default_box_list:
+                        for input_box in market_setting_list:
                             market_list[row][column].settings[input_box.name] = input_box.get_input()
-                            #It's possible to update settings for agents this way
+                            #It's possible to update settings for agents here
                             #possible future work
 
 
@@ -251,14 +283,8 @@ def return_function(button):
     button.display.fill(WHITE)
     draw_agents(button.display)
 
-
     for box in setting_box_list:
-        try:
-            box.buffer = [str(i) for i in str(settings[box.name])]
-        except KeyError:
-            print("no key for setting_box", box.name)
-            print(box)
-            continue
+        box.buffer = [str(i) for i in str(settings[box.name])]
 
 
 def pause_function(button):
@@ -353,7 +379,7 @@ def get_nearby_agents(current_r, current_c):
     return nearby_agents
 
 
-def get_nearby_boxes(current_r,current_c):
+def get_nearby_boxes(current_r, current_c):
     global BIN_NUM_ROWS
     nearby_boxes = []
     for row in range(-1,2):
@@ -417,15 +443,7 @@ def move_agents():
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
                         market_list[row][column].trade(agent, other_agent)
-                        """
-                        Seems like this is unneccesarily due to code in market.py
-                        #Randomize which agant is on which side in the trade
-                        if random.getrandbits(1):
-                            market_list[row][column].trade(agent, other_agent)
-                        else:
-                            market_list[row][column].trade(other_agent, agent)
-                        """
-                        #only collide with one agent each timesetep
+                        #only collide with one agent each timestep
                         break
                 find_new_box(agent)
             if update:
@@ -462,7 +480,6 @@ def on_top_of_other_agent(agent):
     r,c = agent.box
     for other_agent in get_nearby_agents(r, c):
         if agent.collision(other_agent):
-            #print("agent on top of other agent at spawn")
             return True
     return False
 
@@ -489,11 +506,7 @@ def new_agent_in_region(display, region, radius, preference, apples, oranges, ov
     return None
 
 
-def create_many_agents(display, num):
-    global num_agents
-    global market_list
-    global initial_utility
-    global settings
+def create_many_agents(display, market_list, settings, num):
 
     overlapp = settings["avoid overlapping agents"]
     for row in range(len(market_list)):
@@ -520,7 +533,6 @@ def create_many_agents(display, num):
                         print("radius should be:",radius)
                         print("radius is ",agent.radius)
                         print("market",row,column)
-    print(num_agents," number agents")
 
 def initialize_button_list(display, font):
     global button_list
@@ -546,22 +558,22 @@ def create_input_box(name, rect, default_setting):
         pass
     return box
 
-def initialize_defaults_box_list(y_space, x_start, distance_from_text):
-    global default_box_list
+def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
+    global market_setting_list
     global market_settings
 
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
-        default_box_list.append(box)
-    default_box_list[0].ACCEPTED = string.ascii_lowercase
+        market_setting_list.append(box)
+    market_setting_list[0].ACCEPTED = string.ascii_lowercase
 
 def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global setting_box_list
     global settings
 
-    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier"]
+    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size"]
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
@@ -616,10 +628,10 @@ def get_sets_of_apple_orange(market):
 
 
 
-def update_graph(key, market_list, graph):
+def update_graph(settings, market_list, graph):
     label = []
 
-    if key == "line":
+    if settings["graph"] == "line":
         graph.plot_type = "line"
         graph.title = "Utility over time"
         graph.x_label = "Number of time steps"
@@ -629,21 +641,10 @@ def update_graph(key, market_list, graph):
                 label.append(str(row) + str(column))
                 graph.plot(time_step_num_tracker, list(market_list[row][column].utility_tracker))
 
-    elif key == "scatter":
+    elif settings["graph"] == "Allocation":
             graph.title = "Allocation of goods for each agent"
             graph.x_label = "Number of Apples"
             graph.y_label = "Number of Oranges"
-            """
-            #plot budget line
-            a_list = []
-            b_list = []
-            for i in range(100):
-                a_list.append(i)
-                b_list.append(100 - i)
-            graph.plot_type = "line"
-            graph.plot(a_list,b_list)
-            label.append("initial budget line")
-            """
             graph.plot_type = "scatter"
 
             for row in range(len(market_list)):
@@ -651,12 +652,13 @@ def update_graph(key, market_list, graph):
                     label.append(str(row) + str(column))
                     apples, oranges = get_sets_of_apple_orange(market_list[row][column])
                     graph.plot(apples, oranges)
+            graph.make_box(0, (settings["Allocation Graph Size"]))
 
-    elif key == "price":
-        graph.plot_type = "scatter" #scatter or line??? Ask Mayer
+    elif settings["graph"] == "price":
+        graph.plot_type = "scatter"
         graph.title = "Price over time"
         graph.x_label = "Number of time steps"
-        graph.y_label = "Price for [apple/orange]"
+        graph.y_label = "Price (number of Oranges for 1 Apple)"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
                 label.append(str(row) + str(column))
@@ -682,7 +684,6 @@ def main():
     global market_list
     global initial_utility
 
-
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
     display.fill(WHITE)
@@ -703,13 +704,11 @@ def main():
     market_text_xpos = x_start + setting_box_distance
 
     initialize_setting_box_list(5, x_start, 55)
-    initialize_defaults_box_list(5, x_start + setting_box_distance, 55)
+    initalize_market_setting_box_list(5, x_start + setting_box_distance, 55)
     initialize_button_list(display, button_font)
     initialize_market()
 
-
-
-    graph = Graph.Graph("scatter")
+    graph = Graph.Graph("Allocation")
     #graph.ylim_min = initial_utility
 
     run = True
@@ -724,7 +723,7 @@ def main():
 
                 #Make one new agent by pressing space
                 if event.key == pygame.K_SPACE:
-                    create_many_agents(display, 1)
+                    create_many_agents(display, market_list, settings, 1)
 
                 #pres p to pause/unpause
                 elif event.key == pygame.K_p:
@@ -732,7 +731,7 @@ def main():
 
                 elif num_agent_input_box.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
-                        create_many_agents(display, num_agent_input_box.execute())
+                        create_many_agents(display, market_list, settings, num_agent_input_box.execute())
 
                     #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
@@ -759,10 +758,10 @@ def main():
                                 input_box.buffer.append(event.unicode)
                             break
                     #market settings
-                    for input_box in default_box_list:
+                    for input_box in market_setting_list:
                         if input_box.active:
                             if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                                input_box.active= False
+                                input_box.active = False
 
                             #Delete last input
                             if event.key == pygame.K_BACKSPACE:
@@ -791,7 +790,7 @@ def main():
 
                     #update which box is active when changing settings
                     if settings["change settings"]:
-                        for input_box in default_box_list:
+                        for input_box in market_setting_list:
                             input_box.active = input_box.rect.collidepoint(mouse)
 
                         for input_box in setting_box_list:
@@ -812,7 +811,7 @@ def main():
             for input_box in setting_box_list:
                 draw_input_box(input_box, display, button_font)
 
-            for input_box in default_box_list:
+            for input_box in market_setting_list:
                 draw_input_box(input_box, display, button_font)
 
         else:
@@ -847,7 +846,7 @@ def main():
             time = pygame.time.get_ticks()
             if time >= graph.last_update_time + graph.update_delta:
                 graph.last_update_time = time
-                update_graph(settings["graph"], market_list, graph)
+                update_graph(settings, market_list, graph)
             #draw the graph
             display.blit(graph.get_graph_as_image(), (RIGTH_BORDER,150))
 
