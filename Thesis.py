@@ -1,6 +1,5 @@
 
 # In[1]:
-
 import pygame
 import pickle
 import string
@@ -43,7 +42,7 @@ market_setting_list = []
 settings = {
             "rows": 1,
             "columns": 1,
-            "space": 20,
+            "space": 1,
             "update interval": 10,
             "visible data points": 2000,
             "speed multiplier": 1,
@@ -69,7 +68,6 @@ market_settings = {
 #possible preferences:
 #normal (cobb)
 #Perfect Substitutes (linear)
-
 
 # In[2]:
 WIDTH = 1400
@@ -108,8 +106,20 @@ time_step_num_tracker = deque(maxlen = settings["visible data points"])
 
 #devides a pygame.Rect into multiple smaller Rects
 def divide_rect(rectangle, rows, columns, space):
+    #roundeing error here, when devisision is rounded then the rect does not
+    #return the parts that are rounded off.
+    #Fix is to return the last row/col and have them be smaller
     height = int(rectangle.height/rows)
     width = int(rectangle.width/columns)
+
+    """
+    #possible fix? TODO
+    if width*columns < rectangle.width:
+        columns += 1
+    if height*rows < rectangle.height:
+        rows += 1
+    """
+
     r_y = rectangle.y
     r_x = rectangle.x
 
@@ -122,11 +132,12 @@ def divide_rect(rectangle, rows, columns, space):
 
 
 
-#Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS = 45
-BIN_NUM_COLUMNS = 45
 
-BOX_MAP = divide_rect(pygame.Rect(LEFT_BORDER, TOP_BORDER, RIGTH_BORDER-LEFT_BORDER, BOTTOM_BORDER-TOP_BORDER), BIN_NUM_ROWS,BIN_NUM_COLUMNS, 0)
+#Set number of bins (used to do collison calculations faster)
+BIN_NUM_ROWS = 30 #30
+BIN_NUM_COLUMNS = 45 #7s
+
+BOX_MAP = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER), BIN_NUM_ROWS, BIN_NUM_COLUMNS, 0)
 
 #each row+colum represents a box and contains a list of agents in that box
 box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
@@ -163,7 +174,7 @@ def load_function(button):
     except FileNotFoundError:
         print("saved file not fond")
 
-    draw_agents(button.display)
+    return_function(button)
 
 def save_function(button):
     global market_list
@@ -191,13 +202,12 @@ def settings_function(button):
     global button_list
     global market_list
     global setting_box_list
-
     global settings
 
     settings["change settings"] = not settings["change settings"]
     button.display.fill(WHITE)
     button_list = []
-
+    selected_markets = get_selected_markets(market_list)
 
     if settings["change settings"]:
         button.text = "Apply"
@@ -206,20 +216,18 @@ def settings_function(button):
         button_list.append(return_button)
 
         #update box Buffers
-        selected_markets = get_selected_markets(market_list)
-
+        #this can be removed
         if len(selected_markets) == 1:
             for row in range(len(market_list)):
                 for column in range(len(market_list[row])):
                     if market_list[row][column].is_selected:
                         for box in market_setting_list:
                             box.buffer = [str(i) for i in str(market_list[row][column].settings[box.name])]
-        
+
         for box in market_setting_list:
             new_buffer = ""
             stop = False
             for market in selected_markets:
-                print(new_buffer)
                 if stop:
                     break
                 if new_buffer == "":
@@ -241,27 +249,16 @@ def settings_function(button):
         if update_markets:
             initialize_market()
 
-        #MARKET PART
-        if len(get_selected_markets(market_list)) == 0:
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    for input_box in market_setting_list:
-                        market_list[row][column].settings[input_box.name] = input_box.get_input()
-        #else update only the settings of the selected markets
-        else:
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    if market_list[row][column].is_selected:
-                        for input_box in market_setting_list:
-                            market_list[row][column].settings[input_box.name] = input_box.get_input()
-                            #It's possible to update settings for agents here
-                            #possible future work
-
+        #updating settings for selected markets
+        for market in selected_markets:
+            for input_box in market_setting_list:
+                market.settings[input_box.name] = input_box.get_input()
+                #It's possible to update settings for agents here
+                #possible future work to add settings for them
 
         draw_agents(button.display)
         initialize_button_list(button.display, button.font)
         settings["wait"] = True
-
 
 
 
@@ -297,7 +294,9 @@ def step_function(button):
     settings["wait"] = True
     button.color = LIME_GREEN
     button.display.fill(WHITE)
-    move_agents()
+
+    for i in range(settings["speed multiplier"]):
+        move_agents()
     draw_agents(button.display)
     #draw graphs here
     #TODO
@@ -383,9 +382,9 @@ def get_nearby_boxes(current_r, current_c):
     global BIN_NUM_ROWS
     nearby_boxes = []
     for row in range(-1,2):
-        if 0 <= current_r-row <BIN_NUM_ROWS:
+        if 0 <= current_r-row < BIN_NUM_ROWS:
             for col in range(-1,2):
-                if 0<=current_c-col <BIN_NUM_COLUMNS and not row==col==0:
+                if 0 <= current_c-col < BIN_NUM_COLUMNS and not row == col == 0:
                     nearby_boxes.append((current_r-row,current_c-col))
     return nearby_boxes
 
@@ -394,26 +393,30 @@ def get_nearby_boxes(current_r, current_c):
 #finds the new box based on the previous box
 def find_new_box(agent):
     global box_tracker
+    global BOX_MAP
 
-    r,c = agent.box
-    x,y = agent.get_location()
+    r, c = agent.box
+    x, y = agent.get_location()
+
 
     #Check the old box first, since the agent is most likely there
     if BOX_MAP[r][c].collidepoint(x,y):
-       box_tracker[r][c].append(agent)
-       return
+            box_tracker[r][c].append(agent)
+            return
 
 
-    #the loop can be unrolled and speed up here
-    for row,col in get_nearby_boxes(r,c):
+    #the loop can be unrolled, but that is not any faster (tested with profiler)
+    for row, col in get_nearby_boxes(r,c):
+        #print(BOX_MAP[row][col])
         if BOX_MAP[row][col].collidepoint(x,y):
             box_tracker[row][col].append(agent)
             agent.box = (row,col)
-            #print("new box is ",row,col)
             return
-    #This should never happen, but if it does try to set_box again
-    print("could not find new box")
+
+    #This should never happen, but if it does then set_box again
+    #print("could not find new box")
     agent.box = set_box(agent)
+
 
 # In[5]:
 
@@ -426,7 +429,7 @@ def move_agents():
     global time_step_num_tracker
     global setting_box_list
 
-    box_tracker= [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
+    box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_ROWS)]
     num_time_steps += 1
     update = num_time_steps % settings["update interval"] == 0
 
@@ -439,6 +442,7 @@ def move_agents():
             for agent in market_list[row][column].agents:
                 r,c = agent.box
                 agent.move()
+
                 for other_agent in get_nearby_agents(r,c):
                     if agent.collision(other_agent):
                         agent.bounce(other_agent)
@@ -446,6 +450,7 @@ def move_agents():
                         #only collide with one agent each timestep
                         break
                 find_new_box(agent)
+
             if update:
                 market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
                 market_list[row][column].price_tracker.append(market_list[row][column].get_price())
@@ -529,10 +534,7 @@ def create_many_agents(display, market_list, settings, num):
                 agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
-                    if not radius == agent.radius:
-                        print("radius should be:",radius)
-                        print("radius is ",agent.radius)
-                        print("market",row,column)
+
 
 def initialize_button_list(display, font):
     global button_list
@@ -857,6 +859,12 @@ def main():
         fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
+        """
+        #draw the box_map
+        for row in range(len(BOX_MAP)):
+            for column in range(len(BOX_MAP[row])):
+                pygame.draw.rect(display, YELLOW, BOX_MAP[row][column], 1)
+        """
 
         #60 Frames per second
         clock.tick(60)
@@ -867,6 +875,7 @@ def main():
 
     #end of loop exit pygame
     pygame.quit()
+
 
 
 if __name__ == "__main__":
