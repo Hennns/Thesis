@@ -216,14 +216,7 @@ def settings_function(button):
         button_list.append(return_button)
 
         #update box Buffers
-        #this can be removed
-        if len(selected_markets) == 1:
-            for row in range(len(market_list)):
-                for column in range(len(market_list[row])):
-                    if market_list[row][column].is_selected:
-                        for box in market_setting_list:
-                            box.buffer = [str(i) for i in str(market_list[row][column].settings[box.name])]
-
+        
         for box in market_setting_list:
             new_buffer = ""
             stop = False
