@@ -71,6 +71,7 @@ class TextBox():
                     self.outline_color = RED
         return input
 
+
     def write_to_buffer(self, input):
         if len(self.buffer) < self.max_buffer_len:
             self.buffer.append(input)

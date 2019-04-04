@@ -55,6 +55,7 @@ settings = {
             "max_preference": 16,
             "min_preference": 0,
             "max_initial_goods": 1000
+
             }
 
 market_settings = {
@@ -270,6 +271,7 @@ def settings_function(button):
                 if not settings[input_box.name] == input:
                     update_markets = True
             settings[input_box.name] = input
+
         if update_markets:
             initialize_market()
 
@@ -290,6 +292,7 @@ def settings_function(button):
             if box.outline_color == RED:
                 no_red_boxes = False
                 break
+
 
         if no_red_boxes:
             draw_agents(button.display)
@@ -557,7 +560,6 @@ def new_agent_in_region(display, region, radius, preference, apples, oranges, ov
 
 
 def create_many_agents(display, market_list, settings, num):
-
     overlapp = settings["avoid overlapping agents"]
     min = settings["min_preference"]
     max = settings["max_preference"]
@@ -587,6 +589,7 @@ def create_many_agents(display, market_list, settings, num):
 def initialize_button_list(display, font):
     global button_list
     global settings
+
     button_list = []
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
@@ -599,6 +602,7 @@ def initialize_button_list(display, font):
     for i in range(len(names)):
         button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
+
 
     if not settings["region_mode"]:
         button_list[3].color = RED
@@ -616,11 +620,13 @@ def create_input_box(name, rect, default_setting, min, max):
 def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
     global market_setting_list
     global market_settings
+
     global settings
 
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
     min = [None, 1, 0, 0, 0, 0, 0]
     max = [None, 15, 1, settings["max_initial_goods"], settings["max_initial_goods"], settings["max_preference"], settings["max_preference"]]
+
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
@@ -635,7 +641,6 @@ def initialize_setting_box_list(y_space, x_start, distance_from_text):
     names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size", "avoid overlapping agents"]
     min = [1, 1, 0, 1, 100, 1, 50, 0]
     max = [3, 3, 10, 100, 10000, 100, 10000, 1]
-
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings, min[i], max[i])
@@ -687,7 +692,6 @@ def get_sets_of_apple_orange(market):
         apples_list.append(agent.apples)
         oranges_list.append(agent.oranges)
     return apples_list, oranges_list
-
 
 
 def update_graph(settings, market_list, graph):
@@ -771,7 +775,6 @@ def main():
     initialize_market()
 
     graph = Graph.Graph("Allocation")
-
     fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
     run = True
@@ -803,7 +806,6 @@ def main():
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in num_agent_input_box.ACCEPTED:
                         num_agent_input_box.write_to_buffer(event.unicode)
-
 
                 #TODO this can be put in a function, repeating code below.
                 elif settings["change settings"]:
