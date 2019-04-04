@@ -161,6 +161,7 @@ def load_function(button):
     global settings
     global time_step_num_tracker
     global utility_tracker
+    global num_time_steps
 
     settings["wait"] = True
     button.display.fill(WHITE)
@@ -170,6 +171,8 @@ def load_function(button):
         settings = load_list[1]
         time_step_num_tracker = load_list[2]
         utility_tracker = load_list[3]
+
+        num_time_steps = time_step_num_tracker[-1]
     except FileNotFoundError:
         print("saved file not fond")
 
@@ -545,6 +548,28 @@ def new_agent_in_region(display, region, radius, preference, apples, oranges, ov
 def create_many_agents(display, market_list, settings, num):
 
     overlapp = settings["avoid overlapping agents"]
+    #only create new agent in selected markets
+    for market in get_selected_markets(market_list):
+        region = market.region
+        radius = int(market.settings["radius"])
+        preference = market.settings["preference"]
+
+        pref_a = int(market.settings["apple preference"])
+        pref_o = int(market.settings["orange preference"])
+
+        for i in range(num):
+            apples = int(market.settings["apples"])
+            oranges = int(market.settings["oranges"])
+            if apples < 1:
+                apples = random.randint(10,100)
+            if oranges < 1:
+                oranges = random.randint(10,100)
+
+            agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
+            if agent is not None:
+                market.agents.append(agent)
+
+    """
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             region = market_list[row][column].region
@@ -565,7 +590,7 @@ def create_many_agents(display, market_list, settings, num):
                 agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
                 if agent is not None:
                     market_list[row][column].agents.append(agent)
-
+        """
 
 def initialize_button_list(display, font):
     global button_list
