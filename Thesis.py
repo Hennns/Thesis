@@ -146,7 +146,6 @@ box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
 
 
 # In[3]:
-#give graph as varaible?
 def graph_type_function(button):
     global settings
     if settings["graph"] == "Allocation":
@@ -186,6 +185,18 @@ def save_function(button):
     pickle.dump(dump_list, open("save.p", "wb"))
 
 
+def preference_function(button):
+    global market_settings
+    global market_setting_list
+
+    if market_settings["preference"] == "normal":
+        market_settings["preference"] = "linear"
+    else:
+         market_settings["preference"] = "normal"
+
+    market_setting_list[0].buffer = market_settings["preference"]
+
+
 def get_selected_markets(market_list):
     selected = []
     all_markets = []
@@ -201,8 +212,10 @@ def get_selected_markets(market_list):
 def settings_function(button):
     global button_list
     global market_list
+    global market_setting_list
     global setting_box_list
     global settings
+    global BUTTON_SPACE
 
     settings["change settings"] = not settings["change settings"]
     button.display.fill(WHITE)
@@ -212,11 +225,19 @@ def settings_function(button):
     if settings["change settings"]:
         button.text = "Apply"
         return_button = Button.button(BUTTON_X+4*(BUTTON_WIDTH+BUTTON_SPACE),BUTTON_Y,GREEN,"Return",button.font,button.display,return_function, BUTTON_WIDTH, BUTTON_HEIGHT)
+
+        x = market_setting_list[3].rect.x + market_setting_list[3].rect.w + BUTTON_SPACE
+        y = market_setting_list[0].rect.y
+        preference_button = Button.button(x, y, GREEN,"Next preference",button.font,button.display,preference_function, BUTTON_WIDTH, BUTTON_HEIGHT)
+
         button_list.append(button)
         button_list.append(return_button)
+        button_list.append(preference_button)
 
         #update box Buffers
-        
+        for box in setting_box_list:
+            box.buffer = [str(i) for i in str(settings[box.name])]
+
         for box in market_setting_list:
             new_buffer = ""
             stop = False
@@ -226,33 +247,51 @@ def settings_function(button):
                 if new_buffer == "":
                     new_buffer = market.settings[box.name]
                 else:
-                    if (new_buffer == market.settings[box.name]) is False:
+                    #need to compare as string, since the string 1 is not the same as the int 1
+                    if not (str(new_buffer) == str(market.settings[box.name])):
+                        #print(new_buffer, " is not the same as ", market.settings[box.name])
                         new_buffer = ""
                         stop = True
+                    #print(new_buffer, " is the same as ", market.settings[box.name])
             box.buffer = [str(i) for i in str(new_buffer)]
 
     else:
         #Only initialize_markets again if needed
         update_markets = False
         for input_box in setting_box_list:
+            input = input_box.execute()
             if input_box.name == "rows" or input_box.name == "columns" or input_box.name == "space":
-                if not settings[input_box.name] == input_box.get_input():
+                if not settings[input_box.name] == input:
                     update_markets = True
-            settings[input_box.name] = input_box.get_input()
+            settings[input_box.name] = input
+
         if update_markets:
             initialize_market()
 
         #updating settings for selected markets
         for market in selected_markets:
             for input_box in market_setting_list:
-                market.settings[input_box.name] = input_box.get_input()
+                market.settings[input_box.name] = input_box.execute()
                 #It's possible to update settings for agents here
                 #possible future work to add settings for them
 
-        draw_agents(button.display)
-        initialize_button_list(button.display, button.font)
-        settings["wait"] = True
+        no_red_boxes = True
 
+        #chack that all no box is red
+        for input_box in setting_box_list:
+            if input_box.outline_color == RED:
+                no_red_boxes = False
+
+        for box in market_setting_list:
+            if box.outline_color == RED:
+                no_red_boxes = False
+
+        if no_red_boxes:
+            draw_agents(button.display)
+            initialize_button_list(button.display, button.font)
+            settings["wait"] = True
+        else:
+            settings_function(button)
 
 
 def reset_function(button):
@@ -268,7 +307,6 @@ def return_function(button):
     global setting_box_list
 
     settings["change settings"] = False
-    button_list = []
     initialize_button_list(button.display, button.font)
     button.display.fill(WHITE)
     draw_agents(button.display)
@@ -510,15 +548,15 @@ def create_many_agents(display, market_list, settings, num):
     for row in range(len(market_list)):
         for column in range(len(market_list[row])):
             region = market_list[row][column].region
-            radius = market_list[row][column].settings["radius"]
+            radius = int(market_list[row][column].settings["radius"])
             preference = market_list[row][column].settings["preference"]
 
-            pref_a = market_list[row][column].settings["apple preference"]
-            pref_o = market_list[row][column].settings["orange preference"]
+            pref_a = int(market_list[row][column].settings["apple preference"])
+            pref_o = int(market_list[row][column].settings["orange preference"])
 
             for i in range(num):
-                apples = market_list[row][column].settings["apples"]
-                oranges = market_list[row][column].settings["oranges"]
+                apples = int(market_list[row][column].settings["apples"])
+                oranges = int(market_list[row][column].settings["oranges"])
                 if apples < 1:
                     apples = random.randint(10,100)
                 if oranges < 1:
@@ -531,6 +569,7 @@ def create_many_agents(display, market_list, settings, num):
 
 def initialize_button_list(display, font):
     global button_list
+    button_list = []
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
      "Save", "Load", "Next Graph"]
@@ -543,8 +582,8 @@ def initialize_button_list(display, font):
         button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
 
-def create_input_box(name, rect, default_setting):
-    box = TextBox.TextBox(rect)
+def create_input_box(name, rect, default_setting, min, max):
+    box = TextBox.TextBox(rect, min, max)
     box.name = name
     try:
         box.buffer = [str(i) for i in str(default_setting[box.name])]
@@ -558,9 +597,12 @@ def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
     global market_settings
 
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
+    min = [None, 1, 0, 0, 0, 0, 0]
+    max = [None, 15, 1, 1000, 1000, 10, 10]
+
 
     for i in range(len(names)):
-        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings)
+        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
         market_setting_list.append(box)
     market_setting_list[0].ACCEPTED = string.ascii_lowercase
 
@@ -569,9 +611,12 @@ def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global settings
 
     names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size"]
+    min = [1, 1, 0, 1, 100, 1, 50]
+    max = [3, 3, 10, 100, 10000, 100, 10000]
+
 
     for i in range(len(names)):
-        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings)
+        box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings, min[i], max[i])
         setting_box_list.append(box)
 
 
@@ -691,7 +736,7 @@ def main():
     simulation_settings_text = text_font.render("Simulation Settings", True, BLACK)
     market_settings_text = text_font.render("Market Settings (affects all markets if none are selected)", True, BLACK)
 
-    num_agent_input_box = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+    num_agent_input_box = TextBox.TextBox((BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT), 0, 1000)
 
     x_start = BUTTON_X + 2*(BUTTON_WIDTH+BUTTON_SPACE)
     setting_box_distance = 400
@@ -734,8 +779,10 @@ def main():
                             num_agent_input_box.buffer.pop()
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in num_agent_input_box.ACCEPTED:
-                        num_agent_input_box.buffer.append(event.unicode)
+                        num_agent_input_box.write_to_buffer(event.unicode)
 
+
+                #TODO this can be put in a function, repeating code below.
                 elif settings["change settings"]:
                     #simulation settings
                     for input_box in setting_box_list:
@@ -750,7 +797,7 @@ def main():
                                     input_box.buffer.pop()
                             #only allow valid input for this setting
                             elif event.unicode in input_box.ACCEPTED:
-                                input_box.buffer.append(event.unicode)
+                                input_box.write_to_buffer(event.unicode)
                             break
                     #market settings
                     for input_box in market_setting_list:
@@ -764,7 +811,7 @@ def main():
                                     input_box.buffer.pop()
                             #only allow valid input for this setting
                             elif event.unicode in input_box.ACCEPTED:
-                                input_box.buffer.append(event.unicode)
+                                input_box.write_to_buffer(event.unicode)
                             break
 
 
