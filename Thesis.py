@@ -194,7 +194,9 @@ def preference_function(button):
     else:
          market_settings["preference"] = "normal"
 
-    market_setting_list[0].buffer = market_settings["preference"]
+    market_setting_list[0].buffer = []
+    for s in market_settings["preference"]:
+        market_setting_list[0].buffer.append(s)
 
 
 def get_selected_markets(market_list):
@@ -249,10 +251,8 @@ def settings_function(button):
                 else:
                     #need to compare as string, since the string 1 is not the same as the int 1
                     if not (str(new_buffer) == str(market.settings[box.name])):
-                        #print(new_buffer, " is not the same as ", market.settings[box.name])
                         new_buffer = ""
                         stop = True
-                    #print(new_buffer, " is the same as ", market.settings[box.name])
             box.buffer = [str(i) for i in str(new_buffer)]
 
     else:
@@ -600,11 +600,11 @@ def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
     min = [None, 1, 0, 0, 0, 0, 0]
     max = [None, 15, 1, 1000, 1000, 10, 10]
 
-
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
         market_setting_list.append(box)
     market_setting_list[0].ACCEPTED = string.ascii_lowercase
+    market_setting_list[0].accepted_strings = ["normal", "linear"]
 
 def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global setting_box_list
