@@ -221,6 +221,7 @@ def settings_function(button):
     global setting_box_list
     global settings
     global BUTTON_SPACE
+    print()
 
     settings["change settings"] = not settings["change settings"]
     button.display.fill(WHITE)
@@ -267,7 +268,6 @@ def settings_function(button):
                 if not settings[input_box.name] == input:
                     update_markets = True
             settings[input_box.name] = input
-
         if update_markets:
             initialize_market()
 
@@ -277,17 +277,17 @@ def settings_function(button):
                 market.settings[input_box.name] = input_box.execute()
                 #It's possible to update settings for agents here
                 #possible future work to add settings for them
-
         no_red_boxes = True
 
-        #chack that all no box is red
+        #chack that no box is red
         for input_box in setting_box_list:
             if input_box.outline_color == RED:
                 no_red_boxes = False
-
+                break
         for box in market_setting_list:
             if box.outline_color == RED:
                 no_red_boxes = False
+                break
 
         if no_red_boxes:
             draw_agents(button.display)
@@ -299,6 +299,9 @@ def settings_function(button):
 
 def reset_function(button):
     global settings
+    global num_time_steps
+
+    num_time_steps = 0
     settings["wait"] = True
     clear()
     button.display.fill(WHITE)
