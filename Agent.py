@@ -33,7 +33,7 @@ class Agent:
     def create_preferences(self):
         if self.preference == "normal":
 
-            #avoid getting 0 or 1
+            #avoid getting 0 as preference for apples
             self.pref_apples = random.random()
             while(not self.pref_apples):
                 self.pref_apples = random.random()
@@ -191,7 +191,7 @@ class Agent:
     def __get_location_as_int(self):
         return (int(round(self.x)), int(round(self.y)))
 
-    def draw(self,display):
+    def draw(self, display):
         x,y = self.__get_location_as_int()
         if self.is_selected:
             pygame.draw.circle(display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
