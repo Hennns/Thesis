@@ -42,18 +42,19 @@ market_setting_list = []
 settings = {
             "rows": 1,
             "columns": 1,
-            "space": 1,
+            "space": 10,
             "update interval": 10,
             "visible data points": 2000,
             "speed multiplier": 1,
             "region_mode": True,
-            "avoid overlapping agents": True,
+            "avoid overlapping agents": 1,
             "graph": "line",
             "wait": True,
             "change settings": False,
             "Allocation Graph Size" : 175,
             "max_preference": 16,
-            "min_preference": 0
+            "min_preference": 0,
+            "max_initial_goods": 1000
             }
 
 market_settings = {
@@ -76,7 +77,7 @@ WIDTH = 1400
 HEIGHT = 800
 TITLE = "Exchange Economy Simulation"
 
-BUTTON_WIDTH = 110
+BUTTON_WIDTH = 115
 BUTTON_HEIGHT = 60
 BUTTON_X = 20
 BUTTON_Y = 20
@@ -493,7 +494,7 @@ def move_agents():
                 market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
                 market_list[row][column].price_tracker.append(market_list[row][column].get_price())
                 market_list[row][column].price = 0
-                market_list[row][column].num_trades = 1
+                market_list[row][column].num_trades = 0
 
 def get_total_utility(market_list):
     utility = 0
@@ -560,6 +561,7 @@ def create_many_agents(display, market_list, settings, num):
     overlapp = settings["avoid overlapping agents"]
     min = settings["min_preference"]
     max = settings["max_preference"]
+    max_goods = settings["max_initial_goods"]
     #only create new agent in selected markets
     for market in get_selected_markets(market_list):
         region = market.region
@@ -573,9 +575,9 @@ def create_many_agents(display, market_list, settings, num):
             apples = market.settings["apples"]
             oranges = market.settings["oranges"]
             if apples < 1:
-                apples = random.randint(10,100)
+                apples = random.randint(1, max_goods)
             if oranges < 1:
-                oranges = random.randint(10,100)
+                oranges = random.randint(1, max_goods)
 
             agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o, min, max)
             if agent is not None:
@@ -618,7 +620,7 @@ def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
 
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
     min = [None, 1, 0, 0, 0, 0, 0]
-    max = [None, 15, 1, 1000, 1000, settings["max_preference"], settings["max_preference"]]
+    max = [None, 15, 1, settings["max_initial_goods"], settings["max_initial_goods"], settings["max_preference"], settings["max_preference"]]
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
@@ -630,9 +632,9 @@ def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global setting_box_list
     global settings
 
-    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size"]
-    min = [1, 1, 0, 1, 100, 1, 50]
-    max = [3, 3, 10, 100, 10000, 100, 10000]
+    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size", "avoid overlapping agents"]
+    min = [1, 1, 0, 1, 100, 1, 50, 0]
+    max = [3, 3, 10, 100, 10000, 100, 10000, 1]
 
 
     for i in range(len(names)):
@@ -769,7 +771,8 @@ def main():
     initialize_market()
 
     graph = Graph.Graph("Allocation")
-    #graph.ylim_min = initial_utility
+
+    fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
     run = True
     while run:
@@ -889,6 +892,8 @@ def main():
                 button_list[0].color = RED
                 button_list[0].text = "Pause"
                 button_list[2].color = GREEN
+                #only update fps when not paused
+                fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
                 if settings["speed multiplier"] > 1:
                     for i in range(settings["speed multiplier"]):
@@ -916,7 +921,7 @@ def main():
         for b in button_list:
             b.draw_button()
 
-        fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
+        #draw fps
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
         """
