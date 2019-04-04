@@ -11,9 +11,9 @@ class Market:
         self.color = color
         self.is_selected = False
         self.region = region
-        self.price = 0
-        self.price_oranges = 0
-        self.num_trades = 1
+        self.price = 0 #number of oranges for 1 apple
+        #self.price_oranges = 0
+        self.num_trades = 0
         self.agents = []
         self.settings = settings.copy()
         #need to use copy since settings is just the defualts settings and we
@@ -22,9 +22,7 @@ class Market:
         self.price_tracker = deque(maxlen = num_data_points)
 
     def get_price(self):
-        if self.num_trades > 1:
-            self.num_trades - 1
-        if self.price == 0:
+        if self.price == 0 or self.num_trades == 0:
             return None
         return self.price / self.num_trades
 
@@ -56,7 +54,7 @@ class Market:
 
 
 
-    #trade 1 apple for the lowest number of oranges
+    #agent recives 1 apple, and gives back the lowest number of oranges in return
     def trade_apple_for_oranges(self, agent, other_agent):
         #Can't trade of the other agent cannot give away 1 apple
         if other_agent.apples < 1:
