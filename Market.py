@@ -1,7 +1,6 @@
 
-from random import random
-from collections import deque
 
+from collections import deque
 
 from ColorDefinitions import *
 
@@ -31,25 +30,8 @@ class Market:
 
 
     def trade(self, agent, other_agent):
-        show_trade = self.settings["show trade"]
-
-        before_trade_utility_agent = agent.get_utility()
-        before_trade_utility_other_agent = other_agent.get_utility()
-
         traded = self.attempt_trade(agent, other_agent)
-        """
-        #This can be removed! TODO
-        if agent.get_utility() <before_trade_utility_agent:
-            print("MATH ERROR, agent")
-            print("after", agent.get_utility())
-            print("before", before_trade_utility_agent)
-
-        if other_agent.get_utility() <before_trade_utility_other_agent:
-            print("MATH ERROR, other agent")
-            print("after", other_agent.get_utility())
-        """
-
-        if show_trade:
+        if self.settings["show trade"]:
             if traded:
                 agent.color = LIME_GREEN
                 other_agent.color = LIME_GREEN
