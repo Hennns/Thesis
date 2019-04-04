@@ -47,10 +47,9 @@ class TextBox():
         self.outline_color = BLACK
 
         if not self.buffer:
-            if self.final is not None:
-                return self.final
-
             self.outline_color = RED
+            if self.accepted_strings:
+                return self.accepted_strings[0]
             return self.min_value
         if self.ACCEPTED == string.digits:
 
