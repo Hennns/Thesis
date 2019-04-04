@@ -10,14 +10,6 @@ from ColorDefinitions import *
 
 SPEED = 2
 
-#These can also be settings
-INITIAL_MAX_NUM_GOODS = 256
-INITIAL_MAX_PREFERENCE = 16
-INITIAL_MIN_NUM_GOODS = 128
-INITIAL_MIN_PREFERENCE = 2
-
-
-
 SELECTED_WIDTH = 1
 SELECTED_COLOR = YELLOW
 
@@ -41,13 +33,13 @@ class Agent:
 
             return
         elif self.preference =="linear":
-            self.pref_apples = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
-            self.pref_oranges = float(random.randint(INITIAL_MIN_PREFERENCE,INITIAL_MAX_PREFERENCE))
+            self.pref_apples = float(random.randint(self.min_preference, self.max_preference))
+            self.pref_oranges = float(random.randint(self.min_preference, self.max_preference))
 
 
 
     #Initialize variables
-    def __init__(self, region, ID, radius, preference, apples, oranges):
+    def __init__(self, region, ID, radius, preference, apples, oranges, min_preference, max_preference):
 
         self.region = pygame.Rect(region)
         self.id = ID
@@ -56,6 +48,8 @@ class Agent:
         self.is_selected = False
         self.apples = apples
         self.oranges = oranges
+        self.min_preference = max(1, min_preference)
+        self.max_preference = max(min_preference, max_preference)
 
         self.preference = preference
         self.create_preferences()

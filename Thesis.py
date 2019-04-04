@@ -42,16 +42,20 @@ market_setting_list = []
 settings = {
             "rows": 1,
             "columns": 1,
-            "space": 1,
+            "space": 10,
             "update interval": 10,
             "visible data points": 2000,
             "speed multiplier": 1,
             "region_mode": True,
-            "avoid overlapping agents": True,
+            "avoid overlapping agents": 1,
             "graph": "line",
             "wait": True,
             "change settings": False,
-            "Allocation Graph Size" : 175
+            "Allocation Graph Size" : 175,
+            "max_preference": 16,
+            "min_preference": 0,
+            "max_initial_goods": 1000
+
             }
 
 market_settings = {
@@ -74,7 +78,7 @@ WIDTH = 1400
 HEIGHT = 800
 TITLE = "Exchange Economy Simulation"
 
-BUTTON_WIDTH = 110
+BUTTON_WIDTH = 115
 BUTTON_HEIGHT = 60
 BUTTON_X = 20
 BUTTON_Y = 20
@@ -277,17 +281,18 @@ def settings_function(button):
                 market.settings[input_box.name] = input_box.execute()
                 #It's possible to update settings for agents here
                 #possible future work to add settings for them
-
         no_red_boxes = True
 
-        #chack that all no box is red
+        #chack that no box is red
         for input_box in setting_box_list:
             if input_box.outline_color == RED:
                 no_red_boxes = False
-
+                break
         for box in market_setting_list:
             if box.outline_color == RED:
                 no_red_boxes = False
+                break
+
 
         if no_red_boxes:
             draw_agents(button.display)
@@ -299,6 +304,9 @@ def settings_function(button):
 
 def reset_function(button):
     global settings
+    global num_time_steps
+
+    num_time_steps = 0
     settings["wait"] = True
     clear()
     button.display.fill(WHITE)
@@ -489,7 +497,7 @@ def move_agents():
                 market_list[row][column].utility_tracker.append(market_list[row][column].get_utility())
                 market_list[row][column].price_tracker.append(market_list[row][column].get_price())
                 market_list[row][column].price = 0
-                market_list[row][column].num_trades = 1
+                market_list[row][column].num_trades = 0
 
 def get_total_utility(market_list):
     utility = 0
@@ -523,77 +531,65 @@ def on_top_of_other_agent(agent):
     return False
 
 
-def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o):
+def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o, min, max):
     global initial_utility
     global num_agents
 
+
     for i in range(20):
-        agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges)
+        agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges, min, max)
         agent.box = set_box(agent)
 
         if not overlapp or not on_top_of_other_agent(agent):
+            if pref_a > 0 and pref_o > 0:
+                if agent.preference == "normal":
+                    a = pref_a / (pref_a+pref_o)
+                    agent.pref_apples = a
+                    agent.pref_oranges = 1-a
+                elif agent.preference == "linear":
+                    agent.pref_apples = pref_a
+                    agent.pref_oranges = pref_o
+
             find_new_box(agent)
             agent.draw(display)
             initial_utility += agent.get_utility()
             num_agents += 1
-
-            if pref_a > 0 and pref_o > 0:
-                agent.pref_apples = pref_a
-                agent.pref_oranges = pref_o
 
             return agent
     return None
 
 
 def create_many_agents(display, market_list, settings, num):
-
     overlapp = settings["avoid overlapping agents"]
+    min = settings["min_preference"]
+    max = settings["max_preference"]
+    max_goods = settings["max_initial_goods"]
     #only create new agent in selected markets
     for market in get_selected_markets(market_list):
         region = market.region
-        radius = int(market.settings["radius"])
+        radius = market.settings["radius"]
         preference = market.settings["preference"]
 
-        pref_a = int(market.settings["apple preference"])
-        pref_o = int(market.settings["orange preference"])
+        pref_a = market.settings["apple preference"]
+        pref_o = market.settings["orange preference"]
 
         for i in range(num):
-            apples = int(market.settings["apples"])
-            oranges = int(market.settings["oranges"])
+            apples = market.settings["apples"]
+            oranges = market.settings["oranges"]
             if apples < 1:
-                apples = random.randint(10,100)
+                apples = random.randint(1, max_goods)
             if oranges < 1:
-                oranges = random.randint(10,100)
+                oranges = random.randint(1, max_goods)
 
-            agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
+            agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o, min, max)
             if agent is not None:
                 market.agents.append(agent)
 
-    """
-    for row in range(len(market_list)):
-        for column in range(len(market_list[row])):
-            region = market_list[row][column].region
-            radius = int(market_list[row][column].settings["radius"])
-            preference = market_list[row][column].settings["preference"]
-
-            pref_a = int(market_list[row][column].settings["apple preference"])
-            pref_o = int(market_list[row][column].settings["orange preference"])
-
-            for i in range(num):
-                apples = int(market_list[row][column].settings["apples"])
-                oranges = int(market_list[row][column].settings["oranges"])
-                if apples < 1:
-                    apples = random.randint(10,100)
-                if oranges < 1:
-                    oranges = random.randint(10,100)
-
-                agent = new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o)
-                if agent is not None:
-                    market_list[row][column].agents.append(agent)
-        """
 
 def initialize_button_list(display, font):
     global button_list
+    global settings
+
     button_list = []
 
     names = ["Start", "Reset!", "Step", "Borders on", "Settings", "Screenshot",
@@ -606,6 +602,10 @@ def initialize_button_list(display, font):
     for i in range(len(names)):
         button = Button.button(BUTTON_X+ (i+1)*x, BUTTON_Y, GREEN, names[i], font, display, functions[i], BUTTON_WIDTH, BUTTON_HEIGHT)
         button_list.append(button)
+
+
+    if not settings["region_mode"]:
+        button_list[3].color = RED
 
 def create_input_box(name, rect, default_setting, min, max):
     box = TextBox.TextBox(rect, min, max)
@@ -621,9 +621,12 @@ def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
     global market_setting_list
     global market_settings
 
+    global settings
+
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
     min = [None, 1, 0, 0, 0, 0, 0]
-    max = [None, 15, 1, 1000, 1000, 10, 10]
+    max = [None, 15, 1, settings["max_initial_goods"], settings["max_initial_goods"], settings["max_preference"], settings["max_preference"]]
+
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
@@ -635,10 +638,9 @@ def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global setting_box_list
     global settings
 
-    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size"]
-    min = [1, 1, 0, 1, 100, 1, 50]
-    max = [3, 3, 10, 100, 10000, 100, 10000]
-
+    names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size", "avoid overlapping agents"]
+    min = [1, 1, 0, 1, 100, 1, 50, 0]
+    max = [3, 3, 10, 100, 10000, 100, 10000, 1]
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), settings, min[i], max[i])
@@ -690,7 +692,6 @@ def get_sets_of_apple_orange(market):
         apples_list.append(agent.apples)
         oranges_list.append(agent.oranges)
     return apples_list, oranges_list
-
 
 
 def update_graph(settings, market_list, graph):
@@ -774,7 +775,7 @@ def main():
     initialize_market()
 
     graph = Graph.Graph("Allocation")
-    #graph.ylim_min = initial_utility
+    fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
     run = True
     while run:
@@ -805,7 +806,6 @@ def main():
                     #if input is valid (only int are) then add it to the end
                     elif event.unicode in num_agent_input_box.ACCEPTED:
                         num_agent_input_box.write_to_buffer(event.unicode)
-
 
                 #TODO this can be put in a function, repeating code below.
                 elif settings["change settings"]:
@@ -894,6 +894,8 @@ def main():
                 button_list[0].color = RED
                 button_list[0].text = "Pause"
                 button_list[2].color = GREEN
+                #only update fps when not paused
+                fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
                 if settings["speed multiplier"] > 1:
                     for i in range(settings["speed multiplier"]):
@@ -921,7 +923,7 @@ def main():
         for b in button_list:
             b.draw_button()
 
-        fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
+        #draw fps
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
         """

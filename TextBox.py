@@ -47,12 +47,12 @@ class TextBox():
         self.outline_color = BLACK
 
         if not self.buffer:
-            if self.final is not None:
-                return self.final
-            print("empty buffer, no final", self.name)
             self.outline_color = RED
+            if self.accepted_strings:
+                return self.accepted_strings[0]
             return self.min_value
-        try:
+        if self.ACCEPTED == string.digits:
+
             input = int("".join(self.buffer))
             #if input does not meet requirements reset to previous value
             if self.min_value > input:
@@ -62,14 +62,15 @@ class TextBox():
                 input = self.max_value
                 self.outline_color = RED
 
-        except ValueError:
+        else:
+
             input = "".join(self.buffer)
             if self.accepted_strings:
                 if input not in self.accepted_strings:
                     input = self.accepted_strings[0]
                     self.outline_color = RED
-        self.buffer = []
         return input
+
 
     def write_to_buffer(self, input):
         if len(self.buffer) < self.max_buffer_len:
