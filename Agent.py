@@ -191,7 +191,7 @@ class Agent:
     def __get_location_as_int(self):
         return (int(round(self.x)), int(round(self.y)))
 
-    def draw(self,display):
+    def draw(self, display):
         x,y = self.__get_location_as_int()
         if self.is_selected:
             pygame.draw.circle(display, SELECTED_COLOR, (x,y), self.radius+SELECTED_WIDTH)
