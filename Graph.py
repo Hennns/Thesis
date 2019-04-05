@@ -27,8 +27,6 @@ class Graph():
         self.update_graph()
         self.surf = self.get_graph_as_image()
 
-
-
     def get_graph_as_image(self):
         return self.surf
 

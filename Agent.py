@@ -9,7 +9,6 @@ from ColorDefinitions import *
 #from Thesis.ColorDefinitions import *
 
 SPEED = 2
-
 SELECTED_WIDTH = 1
 SELECTED_COLOR = YELLOW
 
