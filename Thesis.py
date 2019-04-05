@@ -403,6 +403,9 @@ def set_box(agent):
     return (0,0)
 
 #the ask for forgivness approach tested to be faster than ask for permission
+#It is possible that adding the current box to the list first is faster,
+#since the agents will then have a collison earlier in the list
+#TODO
 def get_nearby_agents(current_r, current_c):
     global box_tracker
     nearby_agents = []
@@ -438,8 +441,8 @@ def find_new_box(agent):
 
     #Check the old box first, since the agent is most likely there
     if BOX_MAP[r][c].collidepoint(x,y):
-            box_tracker[r][c].append(agent)
-            return
+        box_tracker[r][c].append(agent)
+        return
 
 
     #the loop can be unrolled, but that is not any faster (tested with profiler)
@@ -453,7 +456,8 @@ def find_new_box(agent):
     #This should never happen, but if it does then set_box again
     #print("could not find new box")
     agent.box = set_box(agent)
-
+    r, c = agent.box
+    box_tracker[r][c].append(agent)
 
 # In[5]:
 
