@@ -11,14 +11,7 @@ import random
 import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
-"""
-#Do this when running via atom
-from Thesis import Agent
-from Thesis import TextBox
-from Thesis import Button
-from Thesis.ColorDefinitions import *
 
-"""
 #Do this when running from command line
 import Agent
 import Button
@@ -89,11 +82,13 @@ BOTTOM_BORDER = HEIGHT + settings["space"]
 RIGTH_BORDER = WIDTH - 500
 LEFT_BORDER = 0
 
-
+#Single market border
 region_width = RIGTH_BORDER - LEFT_BORDER
 region_height = BOTTOM_BORDER - TOP_BORDER
 SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
+
+MAX_RADIUS = 15
 num_agents = 0
 num_time_steps = 1
 initial_utility = 1
@@ -109,42 +104,44 @@ time_step_num_tracker = deque(maxlen = settings["visible data points"])
 
 #devides a pygame.Rect into multiple smaller Rects
 def divide_rect(rectangle, rows, columns, space):
-    #roundeing error here, when devisision is rounded then the rect does not
-    #return the parts that are rounded off.
-    #Fix is to return the last row/col and have them be smaller
+    #rounding error here, when devisision is rounded then the rect does not
+    #return the parts that are rounded off. This is corrected futher down by
+    #extending the bottom and rigth boxes if needed, so the entire area is covered.
     height = int(rectangle.height/rows)
     width = int(rectangle.width/columns)
-
-    """
-    #possible fix? TODO
-    if width*columns < rectangle.width:
-        columns += 1
-    if height*rows < rectangle.height:
-        rows += 1
-    """
 
     r_y = rectangle.y
     r_x = rectangle.x
 
     r_list = [[0 for x in range(columns)] for y in range(rows)]
-
     for row in range(rows):
         for c in range(columns):
             r_list[row][c] = pygame.Rect(r_x+(width*c), r_y+(height*row), width-space, height-space)
+
+    #extend the last column of boxes to cover the entire original rectangle
+    if rectangle.right > r_list[-1][-1].right:
+        correction = rectangle.right - (r_list[-1][-1].right)
+        for i in range(rows):
+            r_list[i][-1].width += correction
+
+    #extand the last row of boxes to cover the entire original rectangle
+    if rectangle.bottom > r_list[-1][-1].bottom + space:
+        correction = rectangle.bottom - (r_list[-1][-1].bottom + space)
+        for i in range(columns):
+            r_list[-1][i].height += correction
+
     return r_list
 
 
-
-
 #Set number of bins (used to do collison calculations faster)
-BIN_NUM_ROWS = 30 #30
-BIN_NUM_COLUMNS = 45 #7s
-
+#thse numbers can by dynamicially calculated, but that's neccesarly since the
+#screen size is constant.
+BIN_NUM_ROWS = 24 #can use: math.floor(region_height / MAX_RADIUS) / 2
+BIN_NUM_COLUMNS = 30 #can use: math.floor(region_width / MAX_RADIUS) / 2
 BOX_MAP = divide_rect(pygame.Rect(SINGLE_MARKET_BORDER), BIN_NUM_ROWS, BIN_NUM_COLUMNS, 0)
 
 #each row+colum represents a box and contains a list of agents in that box
 box_tracker = [([[]] * BIN_NUM_COLUMNS) for row in range(BIN_NUM_COLUMNS)]
-
 
 
 # In[3]:
@@ -335,8 +332,6 @@ def step_function(button):
     for i in range(settings["speed multiplier"]):
         move_agents()
     draw_agents(button.display)
-    #Need to update current utility
-    #TODO
 
 def region_function(button):
     global market_list
@@ -371,7 +366,6 @@ def screenshot_function(button):
     pygame.image.save(button.display,current_time+" screenshot.jpg")
 
 
-
 def clear():
     global market_list
     global initial_utility
@@ -404,8 +398,8 @@ def set_box(agent):
 
 #the ask for forgivness approach tested to be faster than ask for permission
 #It is possible that adding the current box to the list first is faster,
-#since the agents will then have a collison earlier in the list
-#TODO
+#since the agents will then (maybe Probably) have a collison earlier in the list.
+#That is not tested yet
 def get_nearby_agents(current_r, current_c):
     global box_tracker
     nearby_agents = []
@@ -429,7 +423,6 @@ def get_nearby_boxes(current_r, current_c):
     return nearby_boxes
 
 
-#thie needs some clean up!! idea is to use direction of agent to speed up calculations
 #finds the new box based on the previous box
 def find_new_box(agent):
     global box_tracker
@@ -454,7 +447,7 @@ def find_new_box(agent):
             return
 
     #This should never happen, but if it does then set_box again
-    #print("could not find new box")
+    print("could not find new box")
     agent.box = set_box(agent)
     r, c = agent.box
     box_tracker[r][c].append(agent)
@@ -533,7 +526,6 @@ def on_top_of_other_agent(agent):
 def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o, min, max):
     global initial_utility
     global num_agents
-
 
     for i in range(20):
         agent = Agent.Agent(region, num_agents+1, radius, preference, apples, oranges, min, max)
@@ -615,14 +607,15 @@ def create_input_box(name, rect, default_setting, min, max):
         pass
     return box
 
-def initalize_market_setting_box_list(y_space, x_start, distance_from_text):
+def initialize_market_setting_box_list(y_space, x_start, distance_from_text, max_radius):
     global market_setting_list
     global market_settings
     global settings
 
+
     names = ["preference", "radius", "show trade", "apples", "oranges", "apple preference", "orange preference"]
     min = [None, 1, 0, 0, 0, 0, 0]
-    max = [None, 15, 1, settings["max_initial_goods"], settings["max_initial_goods"], settings["max_preference"], settings["max_preference"]]
+    max = [None, max_radius, 1, settings["max_initial_goods"], settings["max_initial_goods"], settings["max_preference"], settings["max_preference"]]
 
     for i in range(len(names)):
         box = create_input_box(names[i], (x_start, (BUTTON_Y + distance_from_text + (1+i)*(BUTTON_HEIGHT+y_space)), BUTTON_WIDTH, BUTTON_HEIGHT), market_settings, min[i], max[i])
@@ -747,6 +740,7 @@ def main():
     global settings
     global market_list
     global initial_utility
+    global MAX_RADIUS
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
@@ -768,7 +762,7 @@ def main():
     market_text_xpos = x_start + setting_box_distance
 
     initialize_setting_box_list(5, x_start, 55)
-    initalize_market_setting_box_list(5, x_start + setting_box_distance, 55)
+    initialize_market_setting_box_list(5, x_start + setting_box_distance, 55, MAX_RADIUS)
     initialize_button_list(display, button_font)
     initialize_market()
 
@@ -797,6 +791,7 @@ def main():
                 elif num_agent_input_box.active:
                     if event.key in (pygame.K_RETURN,pygame.K_KP_ENTER):
                         create_many_agents(display, market_list, settings, num_agent_input_box.execute())
+                        num_agent_input_box.buffer = []
 
                     #Delete last input with backspace
                     elif event.key == pygame.K_BACKSPACE:
@@ -882,37 +877,36 @@ def main():
                 draw_input_box(input_box, display, button_font)
 
         else:
+            display.fill(WHITE)
+
             if settings["wait"]:
                 button_list[0].color = GREEN
                 button_list[0].text = "Start"
 
             else:
-                display.fill(WHITE)
                 move_agents()
-                draw_agents(display)
                 button_list[0].color = RED
                 button_list[0].text = "Pause"
                 button_list[2].color = GREEN
-                #only update fps and utility when not paused
-                fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
-                current_utility = text_font.render("Current Utility: {:0.2f}".format(get_total_utility(market_list)), True, BLACK)
 
                 if settings["speed multiplier"] > 1:
                     for i in range(settings["speed multiplier"]):
                         move_agents()
-
+            draw_agents(display)
             draw_markets(display)
 
             #draw the input box
             num_agent_input_box.update()
             num_agent_input_box.draw(display)
 
-            #update graph and utility
+            #update graph
             time = pygame.time.get_ticks()
             if time >= graph.last_update_time + graph.update_delta:
                 graph.last_update_time = time
                 update_graph(settings, market_list, graph)
-
+                #use the same interval to refresh fps and current_utility
+                current_utility = text_font.render("Current Utility: {:0.2f}".format(get_total_utility(market_list)), True, BLACK)
+                fps = text_font.render(str(int(clock.get_fps())), True, BLACK)
 
             #draw the graph and utility
             display.blit(graph.get_graph_as_image(), (RIGTH_BORDER,150))
@@ -925,12 +919,12 @@ def main():
         #draw fps
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
-        """
+
         #draw the box_map
         for row in range(len(BOX_MAP)):
             for column in range(len(BOX_MAP[row])):
                 pygame.draw.rect(display, YELLOW, BOX_MAP[row][column], 1)
-        """
+
 
         #max 60 Frames per second
         clock.tick(60)
