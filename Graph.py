@@ -61,7 +61,6 @@ class Graph():
         #prevents axsis labels from being cut off
         self.fig.tight_layout()
 
-
         canvas = agg.FigureCanvasAgg(self.fig)
         canvas.draw()
         renderer = canvas.get_renderer()
