@@ -919,12 +919,12 @@ def main():
         #draw fps
         display.blit(fps, (WIDTH-fps.get_width()-BUTTON_SPACE, fps.get_height()))
 
-
+        """
         #draw the box_map
         for row in range(len(BOX_MAP)):
             for column in range(len(BOX_MAP[row])):
                 pygame.draw.rect(display, YELLOW, BOX_MAP[row][column], 1)
-
+        """
 
         #max 60 Frames per second
         clock.tick(60)
