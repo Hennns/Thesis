@@ -90,9 +90,7 @@ SINGLE_MARKET_BORDER = (LEFT_BORDER, TOP_BORDER, region_width, region_height)
 
 MAX_RADIUS = 15
 num_agents = 0
-num_time_steps = 1
-initial_utility = 1
-
+num_time_steps = 0
 
 
 #Documnetation for deque
@@ -170,7 +168,11 @@ def load_function(button):
         settings = load_list[1]
         time_step_num_tracker = load_list[2]
         utility_tracker = load_list[3]
-        num_time_steps = time_step_num_tracker[-1]
+        try:
+            num_time_steps = time_step_num_tracker[-1]
+        except IndexError:
+            print("test")
+            num_time_steps = 0
     except FileNotFoundError:
         print("saved file not fond")
 
@@ -368,12 +370,10 @@ def screenshot_function(button):
 
 def clear():
     global market_list
-    global initial_utility
     global num_agents
     global utility_tracker
     global time_step_num_tracker
 
-    initial_utility = 1
     num_agents = 0
     market_list = [[]]
     utility_tracker.clear()
@@ -524,7 +524,6 @@ def on_top_of_other_agent(agent):
 
 
 def new_agent_in_region(display, region, radius, preference, apples, oranges, overlapp, pref_a, pref_o, min, max):
-    global initial_utility
     global num_agents
 
     for i in range(20):
@@ -543,7 +542,6 @@ def new_agent_in_region(display, region, radius, preference, apples, oranges, ov
 
             find_new_box(agent)
             agent.draw(display)
-            initial_utility += agent.get_utility()
             num_agents += 1
 
             return agent
@@ -739,7 +737,6 @@ def main():
     global setting_box_list
     global settings
     global market_list
-    global initial_utility
     global MAX_RADIUS
 
     pygame.init()
