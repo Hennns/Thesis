@@ -171,7 +171,6 @@ def load_function(button):
         try:
             num_time_steps = time_step_num_tracker[-1]
         except IndexError:
-            print("test")
             num_time_steps = 0
     except FileNotFoundError:
         print("saved file not fond")
