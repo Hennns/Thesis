@@ -1,10 +1,14 @@
 
 
-import pylab
+
 import pygame
 import matplotlib as plt
-import matplotlib.backends.backend_agg as agg
+
+#this needs to be called before importing pylab and matplotlib.backend
 plt.use("Agg")
+
+import matplotlib.backends.backend_agg as agg
+import pylab
 
 
 #http://www.pygame.org/wiki/MatplotlibPygame
