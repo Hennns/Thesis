@@ -1,8 +1,6 @@
 
 import pygame
-
 from ColorDefinitions import *
-#from Thesis.ColorDefinitions import *
 
 class button:
 

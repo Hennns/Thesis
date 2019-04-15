@@ -12,7 +12,6 @@ import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 
-#Do this when running from command line
 import Agent
 import Button
 import TextBox
@@ -395,10 +394,7 @@ def set_box(agent):
     print("box not found")
     return (0,0)
 
-#the ask for forgivness approach tested to be faster than ask for permission
-#It is possible that adding the current box to the list first is faster,
-#since the agents will then (maybe Probably) have a collison earlier in the list.
-#That is not tested yet
+#The ask for forgivness approach tested to be faster than ask for permission
 def get_nearby_agents(current_r, current_c):
     global box_tracker
     nearby_agents = []
@@ -692,7 +688,7 @@ def update_graph(settings, market_list, graph):
         graph.y_label = "Utility"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
-                label.append(str(row) + str(column))
+                label.append("C:" + str(row) + ", R:" + str(column))
                 graph.plot(time_step_num_tracker, list(market_list[row][column].utility_tracker))
 
     elif settings["graph"] == "Allocation":
@@ -703,7 +699,7 @@ def update_graph(settings, market_list, graph):
 
             for row in range(len(market_list)):
                 for column in range(len(market_list[row])):
-                    label.append(str(row) + str(column))
+                    label.append("C:" + str(row) + ", R:" + str(column))
                     apples, oranges = get_sets_of_apple_orange(market_list[row][column])
                     graph.plot(apples, oranges)
             graph.make_box(0, (settings["Allocation Graph Size"]))
@@ -715,7 +711,7 @@ def update_graph(settings, market_list, graph):
         graph.y_label = "Price (number of Oranges for 1 Apple)"
         for row in range(len(market_list)):
             for column in range(len(market_list[row])):
-                label.append(str(row) + str(column))
+                label.append("C:" + str(row) + ", R:" + str(column))
                 graph.plot(time_step_num_tracker, list(market_list[row][column].price_tracker))
 
     graph.set_legend(label)
