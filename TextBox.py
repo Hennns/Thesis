@@ -4,7 +4,7 @@ import pygame
 from pygame.locals import *
 
 from ColorDefinitions import *
-#from Thesis.ColorDefinitions import *
+
 
 #https://github.com/Mekire/pygame-textbox
 #this file is modified from above source
