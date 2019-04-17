@@ -1,21 +1,20 @@
 Controls:
 
-Enter number of agents to add in the box, hit return to create them
-
-spacebar creates one agent
+Enter number of agents to add in the top-left box, then hit return to create them
+agents will only be created in selected markets
 
 click start to begin (can also press g)
-c
-lick pause to stop (can also press p)
+click pause to stop (can also press p)
+click inside a market to select it.
+
+There is many different settings, the settings will only be changed for selected markets
 
 													
 The color of the agents indicate of the relative amount of goods they have on a scale
 
-Cyan means more of good 1
-
-Blue means more of good 0
+Cyan means more of good 1 (oranges)
+Blue means more of good 0 (apples)
 
 Green blinks means agents successfully traded
-
 Red means a trade was impossible
 
