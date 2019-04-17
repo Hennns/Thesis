@@ -107,6 +107,7 @@ class Agent:
         print("mrs apples bug")
         self.print_info()
 
+    """
     #number of apples willing to trade for 1 orange
     def get_mrs_oranges(self):
         if self.preference == "normal":
@@ -115,7 +116,7 @@ class Agent:
             return self.pref_oranges/self.pref_apples
         print("mrs oranges bug")
         self.print_info()
-
+    """
 
 
     def print_info(self):

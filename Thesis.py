@@ -621,8 +621,8 @@ def initialize_setting_box_list(y_space, x_start, distance_from_text):
     global settings
 
     names = ["rows", "columns", "space", "update interval", "visible data points", "speed multiplier", "Allocation Graph Size", "avoid overlapping agents"]
-    min = [1, 1, 0, 1, 100, 1, 50, 0]
-    max = [3, 3, 10, 100, 10000, 100, 10000, 1]
+    min = [1, 1, 10, 1, 100, 1, 50, 0]
+    max = [3, 3, 20, 100, 10000, 100, 10000, 1]
 
 
     for i in range(len(names)):
@@ -733,6 +733,7 @@ def main():
     global settings
     global market_list
     global MAX_RADIUS
+    global RIGTH_BORDER
 
     pygame.init()
     display = pygame.display.set_mode((WIDTH,HEIGHT), pygame.HWSURFACE)
@@ -902,7 +903,7 @@ def main():
 
             #draw the graph and utility
             display.blit(graph.get_graph_as_image(), (RIGTH_BORDER,150))
-            display.blit(current_utility, (RIGTH_BORDER, 750))
+            display.blit(current_utility, (RIGTH_BORDER + 10, 750))
 
         #draw the buttons
         for b in button_list:
