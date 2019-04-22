@@ -15,9 +15,9 @@ SELECTED_COLOR = YELLOW
 class Agent:
 
     def update_color(self):
-        scaler = self.apples / (self.apples + self.oranges)
+        scalar = self.apples / (self.apples + self.oranges)
         r = 0
-        g = int(255 * (1 - scaler))
+        g = int(255 * (1 - scalar))
         b = 255
         self.color = (r, g, b)
 
