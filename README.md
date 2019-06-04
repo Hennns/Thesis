@@ -3,7 +3,7 @@ Controls:
 Enter number of agents to add in the top-left box, then hit return to create them
 agents will only be created in selected markets
 
-click start to begin (can also press g)
+click start to begin (can also press p)
 click pause to stop (can also press p)
 click inside a market to select it.
 
