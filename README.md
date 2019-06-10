@@ -1,3 +1,5 @@
+The final paper is the file called "Thesis in pdf". 
+
 Controls:
 
 Enter number of agents to add in the top-left box, then hit return to create them
