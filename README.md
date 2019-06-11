@@ -3,6 +3,7 @@ The final paper is the file called "Thesis in pdf".
 Controls:
 
 Enter number of agents to add in the top-left box, then hit return to create them
+
 agents will only be created in selected markets
 
 click start to begin (can also press p)
